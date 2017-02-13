@@ -15,7 +15,7 @@ export default (auth, client, account, alert, regionSettings, composeText, messa
         console.error('Skip test case as failed to login with credential ', account);
       }
       await waitUntilNotNull(() => messageSender.senderNumbersList[0], 'First number in senderNumberList', 3);
-      await waitUntilObjectSizeGreaterThan(() => composeText.senderNumber, 'Sender Number', 3);
+      await waitUntilObjectSizeGreaterThan(() => composeText.senderNumber, 'Sender Number', 0, 3);
     });
 
     conditionalDescribe('Should Init Successfully with Deafult Setting', () => {

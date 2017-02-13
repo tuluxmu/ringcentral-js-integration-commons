@@ -53,11 +53,11 @@ export function waitUntilObjectSizeGreaterThan(source, checkItem, compareSize, t
       if (isTimeOut(startTime, timeoutInSeconds)) {
         clearInterval(timer);
         resolve(false);
-        console.log('Timeout wait for ' + checkItem + ' to be not null'); 
+        console.log(`Timeout wait for ${checkItem} to be not null`);
       }
       try {
         const checkValue = source();
-        if (checkValue !== null && checkValue.length > compareSize ) {
+        if (checkValue !== null && checkValue.length > compareSize) {
           clearInterval(timer);
           resolve(true);
         }
@@ -72,7 +72,7 @@ export function waitInSeconds(seconds) {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve(null);
-  }, seconds * 1000);
+    }, seconds * 1000);
   });
 }
 
