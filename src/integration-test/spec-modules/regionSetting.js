@@ -16,11 +16,12 @@ export default (auth, client, regionSettings, account) => {
     });
 
     it('Region Settings should be ready in 2 seconds after login', async function () {
+      this.retries(2);
       await waitInSeconds(2);
       expect(regionSettings.availableCountries).to.have.length.above(0);
     });
     
-    it("Record fetched from SDK should be the same as RawData",function(){
+    it('Record fetched from SDK should be the same as RawData',function(){
       expect(regionSettings.availableCountries.length).to.equal(clientHistoryRequest.getRawResponse(ClientHistoryRequest.endPoints.dialingPlan).records.length);
     });
   });
