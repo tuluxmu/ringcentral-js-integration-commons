@@ -1,18 +1,22 @@
-import loginStatus from '../..//modules/Auth/loginStatus';
-import messageSenderMessages from '../..//modules/MessageSender/messageSenderMessages';
+import loginStatus from '../../modules/Auth/loginStatus';
+import messageSenderMessages from '../../modules/MessageSender/messageSenderMessages';
 import { containsErrorMessage, ensureLogin } from '../utils/HelpUtil';
-import { waitUntilEqual, waitInSeconds } from '../utils/WaitUtil';
+import { waitUntilEqual, waitInSeconds, waitUntilNotNull } from '../utils/WaitUtil';
 import ClientHistoryRequest from '../utils/ClientHistoryRequest';
 
 export default (auth, client, account, alert, regionSettings, composeText, messageSender) => {
   describe('ComposeText', async function () {
     this.timeout(20000);
     let conditionalDescribe = describe;
-    const isLoginSuccess = await ensureLogin(auth, account);
-    if (!isLoginSuccess) {
-      conditionalDescribe = describe.skip;
-      console.error('Skip test case as failed to login with credential ', account);
-    }    
+    before(async function () {
+      const isLoginSuccess = await ensureLogin(auth, account);
+      if (!isLoginSuccess) {
+        conditionalDescribe = describe.skip;
+        console.error('Skip test case as failed to login with credential ', account);
+      }
+      await waitUntilNotNull(() => messageSender.senderNumbersList[0], 'messager Sender', '3');
+    });
+
     conditionalDescribe('Should Init Successfully with Deafult Setting', () => {
       it('Should Set Sender Number with First SmsSender Phone Number by Default', () => {
         expect(composeText.senderNumber).to.equals(messageSender.senderNumbersList[0]);

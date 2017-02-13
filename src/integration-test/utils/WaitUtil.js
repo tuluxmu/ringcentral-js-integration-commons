@@ -9,7 +9,7 @@ export function waitUntilNotNull(source, checkItem, timeoutInSeconds) {
       if (isTimeOut(startTime, timeoutInSeconds)) {
         clearInterval(timer);
         resolve(false);
-        console.error('Timeout wait for ' + checkItem + ' to be not null');
+        console.error(`Timeout wait for ${checkItem}  to be not null`);
       }
       try {
         const checkValue = source();
