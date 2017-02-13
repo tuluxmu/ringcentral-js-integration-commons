@@ -1,7 +1,7 @@
 import loginStatus from '../../modules/Auth/loginStatus';
 import messageSenderMessages from '../../modules/MessageSender/messageSenderMessages';
 import { containsErrorMessage, ensureLogin } from '../utils/HelpUtil';
-import { waitUntilEqual, waitInSeconds, waitUntilNotNull } from '../utils/WaitUtil';
+import { waitUntilEqual, waitInSeconds, waitUntilNotNull, waitUntilObjectSizeGreaterThan } from '../utils/WaitUtil';
 import ClientHistoryRequest from '../utils/ClientHistoryRequest';
 
 export default (auth, client, account, alert, regionSettings, composeText, messageSender) => {
@@ -14,7 +14,8 @@ export default (auth, client, account, alert, regionSettings, composeText, messa
         conditionalDescribe = describe.skip;
         console.error('Skip test case as failed to login with credential ', account);
       }
-      await waitUntilNotNull(() => messageSender.senderNumbersList[0], 'messager Sender', '3');
+      await waitUntilNotNull(() => messageSender.senderNumbersList[0], 'First number in senderNumberList', 3);
+      await waitUntilObjectSizeGreaterThan(() => composeText.senderNumber, 'Sender Number', 3);
     });
 
     conditionalDescribe('Should Init Successfully with Deafult Setting', () => {
