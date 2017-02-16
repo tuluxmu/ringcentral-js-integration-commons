@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import {
-  getTimetampReducer,
+  getTimestampReducer,
   getDataReducer,
 } from './getAccountExtensionReducer';
 import actionTypes from './actionTypes';
@@ -54,15 +54,15 @@ describe('getDataReducer', () => {
     });
   });
 });
-describe('getTimetampReducer', () => {
+describe('getTimestampReducer', () => {
   it('should be a function', () => {
-    expect(getTimetampReducer).to.be.a('function');
+    expect(getTimestampReducer).to.be.a('function');
   });
   it('should return a reducer', () => {
-    expect(getTimetampReducer({ types: actionTypes })).to.be.a('function');
+    expect(getTimestampReducer({ types: actionTypes })).to.be.a('function');
   });
-  describe('defaultTimestampReducer', () => {
-    const reducer = getTimetampReducer(actionTypes);
+  describe('timestampReducer', () => {
+    const reducer = getTimestampReducer(actionTypes);
     it('should have initial state of null', () => {
       expect(reducer(undefined, {})).to.be.null;
     });

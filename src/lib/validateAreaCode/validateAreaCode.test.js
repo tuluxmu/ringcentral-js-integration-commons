@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import validateAreaCode from './validateAreaCode';
+import validateAreaCode from '.';
 
 describe('validateAreaCode', () => {
   it('should return true when areaCode is 650', () => {

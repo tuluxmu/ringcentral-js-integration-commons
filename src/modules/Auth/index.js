@@ -143,7 +143,6 @@ export default class Auth extends RcModule {
   }
   initialize() {
     let loggedIn;
-    this._bindEvents();
     this.store.subscribe(async () => {
       if (
         this.status === moduleStatus.pending &&
@@ -156,6 +155,7 @@ export default class Auth extends RcModule {
         });
         const platform = this._client.service.platform();
         loggedIn = await platform.loggedIn();
+        this._bindEvents();
         this.store.dispatch({
           type: this.actionTypes.initSuccess,
           loggedIn,

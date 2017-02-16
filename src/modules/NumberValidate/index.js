@@ -26,26 +26,44 @@ export default class NumberValidate extends RcModule {
   }
 
   initialize() {
-    this.store.subscribe(() => {
-      if (
-        this._regionSettings.ready &&
-        this._accountExtension.ready &&
-        this.status === moduleStatus.pending
-      ) {
-        this.store.dispatch({
-          type: this.actionTypes.initSuccess,
-        });
-      } else if (
-        (
-          !this._regionSettings.ready ||
-          !this._accountExtension.ready
-        ) &&
-        this.status === moduleStatus.ready
-      ) {
-        this.store.dispatch({
-          type: this.actionTypes.resetSuccess,
-        });
-      }
+    this.store.subscribe(() => this._onStateChange());
+  }
+
+  _onStateChange() {
+    if (this._shouldInit()) {
+      this._initModuleStatus();
+    } else if (this._shouldReset()) {
+      this._resetModuleStatus();
+    }
+  }
+
+  _shouldInit() {
+    return (
+      this._regionSettings.ready &&
+      this._accountExtension.ready &&
+      !this.ready
+    );
+  }
+
+  _initModuleStatus() {
+    this.store.dispatch({
+      type: this.actionTypes.initSuccess,
+    });
+  }
+
+  _shouldReset() {
+    return (
+      (
+        !this._regionSettings.ready ||
+        !this._accountExtension.ready
+      ) &&
+      this.ready
+    );
+  }
+
+  _resetModuleStatus() {
+    this.store.dispatch({
+      type: this.actionTypes.resetSuccess,
     });
   }
 
@@ -79,18 +97,24 @@ export default class NumberValidate extends RcModule {
   }
 
   _isSpecial(phoneNumber) {
-    return phoneNumber && phoneNumber.special;
+    if (phoneNumber && phoneNumber.special) {
+      return true;
+    }
+    return false;
   }
 
   _isNotAnExtension(extensionNumber) {
-    return extensionNumber &&
+    if (extensionNumber &&
       extensionNumber.length <= 5 &&
-      !this._accountExtension.isAvailableExtension(extensionNumber);
+      !this._accountExtension.isAvailableExtension(extensionNumber)
+    ) {
+      return true;
+    }
+    return false;
   }
 
   async validateNumbers(phoneNumbers) {
-    let validateResult = null;
-    validateResult = this.validateFormat(phoneNumbers);
+    const validateResult = this.validateFormat(phoneNumbers);
     if (!validateResult.result) {
       return validateResult;
     }
@@ -146,13 +170,18 @@ export default class NumberValidate extends RcModule {
     const normalizedNumbers = phoneNumbers.map(phoneNumber => (
       normalizeNumber({ phoneNumber, countryCode, areaCode })
     ));
+    const response = await this._numberParserApi(normalizedNumbers, homeCountry);
+    return response.phoneNumbers;
+  }
+
+  async _numberParserApi(originalStrings, homeCountry) {
     const response = await this._client.numberParser().parse().post(
       {
-        originalStrings: normalizedNumbers,
+        originalStrings,
       },
       homeCountry,
     );
-    return response.phoneNumbers;
+    return response;
   }
 
   get status() {

@@ -1,3 +1,4 @@
+import 'core-js/fn/array/find';
 import RcModule from '../../lib/RcModule';
 import isBlank from '../../lib/isBlank';
 import moduleStatus from '../../enums/moduleStatus';
@@ -165,22 +166,22 @@ export default class MessageSender extends RcModule {
       return null;
     }
 
-    const validateToNumberResult = await this._validateToNumbers(toNumbers);
-    if (!validateToNumberResult.result) {
-      return null;
-    }
-    const recipientNumbers = validateToNumberResult.numbers;
-
-    const extensionNumbers = recipientNumbers.filter(number => (number.length <= 5));
-    const phoneNumbers = recipientNumbers.filter(number => (number.length > 5));
-
-    if (phoneNumbers.length > 0) {
-      if (!this._validateSenderNumber(fromNumber)) {
+    try {
+      const validateToNumberResult = await this._validateToNumbers(toNumbers);
+      if (!validateToNumberResult.result) {
         return null;
       }
-    }
+      const recipientNumbers = validateToNumberResult.numbers;
 
-    try {
+      const extensionNumbers = recipientNumbers.filter(number => (number.length <= 5));
+      const phoneNumbers = recipientNumbers.filter(number => (number.length > 5));
+
+      if (phoneNumbers.length > 0) {
+        if (!this._validateSenderNumber(fromNumber)) {
+          return null;
+        }
+      }
+
       this.store.dispatch({
         type: this.actionTypes.send,
       });

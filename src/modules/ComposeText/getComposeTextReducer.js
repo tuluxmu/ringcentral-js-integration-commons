@@ -1,3 +1,4 @@
+import 'core-js/fn/array/find';
 import { combineReducers } from 'redux';
 import getModuleStatusReducer from '../../lib/getModuleStatusReducer';
 

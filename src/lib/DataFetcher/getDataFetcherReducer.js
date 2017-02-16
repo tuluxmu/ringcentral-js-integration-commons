@@ -15,8 +15,9 @@ export function getDefaultTimestampReducer(types) {
   };
 }
 
-export default function getDataFetcherReducer(types) {
+export default function getDataFetcherReducer(types, reducers = {}) {
   return combineReducers({
+    ...reducers,
     status: getModuleStatusReducer(types),
   });
 }

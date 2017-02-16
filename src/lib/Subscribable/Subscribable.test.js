@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import Subscribable from './Subscribable';
+import Subscribable from '.';
 
 describe('Subscribable', () => {
   it('should be a function', () => {

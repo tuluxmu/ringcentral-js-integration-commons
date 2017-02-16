@@ -29,10 +29,11 @@ describe('getMessageReducer', () => {
         message,
       })).to.equal(message);
     });
-    it('should return null for all other actions', () => {
-      expect(reducer('foo', {
+    it('should return original state for all other actions', () => {
+      const originalState = {};
+      expect(reducer(originalState, {
         type: 'foo',
-      })).to.be.null;
+      })).to.equal(originalState);
     });
   });
 });

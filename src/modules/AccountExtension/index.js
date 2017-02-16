@@ -5,7 +5,7 @@ import fetchList from '../../lib/fetchList';
 import actionTypes from './actionTypes';
 import {
   getDataReducer,
-  getTimetampReducer,
+  getTimestampReducer,
 } from './getAccountExtensionReducer';
 
 const extensionRegExp = /.*\/extension$/;
@@ -50,7 +50,7 @@ export default class AccountExtension extends DataFetcher {
       ttl,
       actionTypes,
       getDataReducer,
-      getTimetampReducer,
+      getTimestampReducer,
       subscriptionFilters: ['/account/~/extension'],
       subscriptionHandler: async (message) => {
         if (

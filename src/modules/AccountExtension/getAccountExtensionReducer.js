@@ -17,7 +17,7 @@ export function getDataReducer(types) {
   };
 }
 
-export function getTimetampReducer(types) {
+export function getTimestampReducer(types) {
   return (state = null, { type, timestamp }) => {
     switch (type) {
       case types.fetchSuccess:

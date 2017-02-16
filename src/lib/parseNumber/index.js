@@ -1,4 +1,4 @@
-import cleanNumber from './cleanNumber';
+import cleanNumber from '../cleanNumber';
 
 export default function parseNumber(phoneNumber) {
   const cleaned = cleanNumber(`${phoneNumber}`);

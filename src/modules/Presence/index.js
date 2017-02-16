@@ -1,6 +1,6 @@
 import RcModule from '../../lib/RcModule';
 import getPresenceReducer from './getPresenceReducer';
-import actionTypes from './actionTypes';
+import presenceActionTypes from './actionTypes';
 import loginStatus from '../Auth/loginStatus';
 import moduleStatus from '../../enums/moduleStatus';
 
@@ -11,6 +11,7 @@ export default class Presence extends RcModule {
     auth,
     client,
     subscription,
+    actionTypes = presenceActionTypes,
     ...options
   }) {
     super({
@@ -22,6 +23,18 @@ export default class Presence extends RcModule {
     this._subscription = subscription;
 
     this._reducer = getPresenceReducer(this.actionTypes);
+    this._lastMessage = null;
+  }
+  _subscriptionHandler = (message) => {
+    if (message && presenceEndPoint.test(message.event) && message.body) {
+      const {
+        dndStatus
+      } = message.body;
+      this.store.dispatch({
+        type: this.actionTypes.notification,
+        dndStatus,
+      });
+    }
   }
   initialize() {
     this.store.subscribe(async () => {
@@ -40,7 +53,7 @@ export default class Presence extends RcModule {
         });
       } else if (
         (this._auth.loginStatus !== loginStatus.loggedIn ||
-        !this._subscription.ready) &&
+          !this._subscription.ready) &&
         this.ready
       ) {
         this.store.dispatch({
@@ -48,13 +61,12 @@ export default class Presence extends RcModule {
         });
       } else if (
         this.ready &&
+        this._subscription.ready &&
         this._subscription.message &&
-        presenceEndPoint.test(this._subscription.message.event)
+        this._subscription.message !== this._lastMessage
       ) {
-        this.store.dispatch({
-          type: this.actionTypes.notification,
-          dndStatus: this._subscription.message.body && this._subscription.message.body.dndStatus,
-        });
+        this._lastMessage = this._subscription.message;
+        this._subscriptionHandler(this._lastMessage);
       }
     });
   }

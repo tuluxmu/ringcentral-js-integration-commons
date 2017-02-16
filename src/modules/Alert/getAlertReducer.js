@@ -1,4 +1,5 @@
 import { combineReducers } from 'redux';
+import 'core-js/fn/array/find';
 
 export function getMessagesReducer(types) {
   return (state = [], {
