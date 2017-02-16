@@ -7,7 +7,7 @@ import getRateLimiterReducer, {
 import errorMessages from './errorMessages';
 
 const DEFAULT_THROTTLE_DURATION = 61 * 1000;
-
+const DEFAULT_ALERT_TTL = 5 * 1000;
 export default class RateLimiter extends RcModule {
   constructor({
     alert,
@@ -69,7 +69,7 @@ export default class RateLimiter extends RcModule {
     if (this.throttling && this._alert) {
       this._alert.danger({
         message: errorMessages.rateLimitReached,
-        ttl: this.ttl,
+        ttl: DEFAULT_ALERT_TTL,
         allowDuplicates: false,
       });
     }
