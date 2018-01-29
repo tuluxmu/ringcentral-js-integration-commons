@@ -29,7 +29,17 @@ export default class ForwardingNumber extends DataFetcher {
         }
         return fetchList(params => (
           this._client.account().extension().forwardingNumber().list(params)
-        ));
+        )).catch((error) => {
+          if (
+            error &&
+            error.apiResponse &&
+            error.apiResponse._response &&
+            error.apiResponse._response.status === 403
+          ) {
+            return [];
+          }
+          throw error;
+        });
       },
       readyCheckFn: () => this._rolesAndPermissions.ready,
       ...options,

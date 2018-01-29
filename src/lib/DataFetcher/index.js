@@ -179,6 +179,7 @@ export default class DataFetcher extends Pollable {
         await this.fetchData();
       } catch (e) {
         console.error('fetchData error:', e);
+        this._retry();
       }
     } else if (this._polling) {
       this._startPolling();
