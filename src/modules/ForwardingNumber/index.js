@@ -2,6 +2,7 @@ import { Module } from '../../lib/di';
 import DataFetcher from '../../lib/DataFetcher';
 import fetchList from '../../lib/fetchList';
 import ensureExist from '../../lib/ensureExist';
+import throttle from '../../lib/throttle';
 /**
  * @class
  * @description Extension forwarding number list module
@@ -29,7 +30,17 @@ export default class ForwardingNumber extends DataFetcher {
         }
         return fetchList(params => (
           this._client.account().extension().forwardingNumber().list(params)
-        ));
+        )).catch((error) => {
+          if (
+            error &&
+            error.apiResponse &&
+            error.apiResponse._response &&
+            error.apiResponse._response.status === 403
+          ) {
+            return [];
+          }
+          throw error;
+        });
       },
       readyCheckFn: () => this._rolesAndPermissions.ready,
       ...options,
