@@ -6,25 +6,8 @@ import actionTypes from './actionTypes';
 import loginStatus from './loginStatus';
 import authMessages from './authMessages';
 import moduleStatuses from '../../enums/moduleStatuses';
-import parseCallbackUri from '../../lib/parseCallbackUri';
 import ensureExist from '../../lib/ensureExist';
 import proxify from '../../lib/proxy/proxify';
-
-const DEFAULT_PROXY_RETRY = 5000;
-
-function getDefaultRedirectUri() {
-  if (typeof window !== 'undefined') {
-    return url.resolve(window.location.href, './redirect.html');
-  }
-  return null;
-}
-
-function getDefaultProxyUri() {
-  if (typeof window !== 'undefined') {
-    return url.resolve(window.location.href, './proxy.html');
-  }
-  return null;
-}
 
 /**
  * @class
@@ -287,11 +270,31 @@ export default class Auth extends RcModule {
    */
   @proxify
   async login({
-    username, password, extension, remember, code, redirectUri
+    username,
+    password,
+    extension,
+    remember,
+    code,
+    redirectUri,
+    accessToken,
+    expiresIn,
+    endpointId,
+    tokenType
   }) {
     this.store.dispatch({
       type: this.actionTypes.login,
     });
+    let ownerId;
+    if (accessToken) {
+      this._client.service.platform().auth().setData({
+        token_type: tokenType,
+        access_token: accessToken,
+        expires_in: expiresIn,
+        refresh_token_expires_in: expiresIn,
+      });
+      const extensionData = await this._client.account().extension().get();
+      ownerId = extensionData.id;
+    }
     return this._client.service.platform().login({
       username,
       password,
@@ -299,6 +302,11 @@ export default class Auth extends RcModule {
       remember,
       code,
       redirectUri,
+      endpoint_id: endpointId,
+      expires_in: expiresIn,
+      access_token: accessToken,
+      token_type: tokenType,
+      owner_id: ownerId,
     });
   }
   /**
@@ -306,11 +314,12 @@ export default class Auth extends RcModule {
    * @param {String} options.redirectUri
    * @param {String} options.brandId
    * @param {Boolean} options.force
+   * @param {Boolean} options.implicit
    * @return {String}
    * @description get OAuth page url
    */
   getLoginUrl({
-    redirectUri, state, brandId, display, prompt, force
+    redirectUri, state, brandId, display, prompt, force, implicit = false
   }) {
     return `${this._client.service.platform().loginUrl({
       redirectUri,
@@ -318,6 +327,7 @@ export default class Auth extends RcModule {
       brandId,
       display,
       prompt,
+      implicit,
     })}${force ? '&force' : ''}`;
   }
 
@@ -352,6 +362,13 @@ export default class Auth extends RcModule {
     this.store.dispatch({
       type: this.actionTypes.logout,
     });
+    if (this.isImplicit) {
+      this._client.service.platform()._cache.clean();
+      this.store.dispatch({
+        type: this.actionTypes.logoutSuccess,
+      });
+      return null;
+    }
     return this._client.service.platform().logout();
   }
 
@@ -383,6 +400,34 @@ export default class Auth extends RcModule {
   }
 
   @proxify
+  async refreshImplicitToken({
+    tokenType,
+    accessToken,
+    expiresIn,
+    endpointId,
+  }) {
+    try {
+      const extensionData = await this._client.account().extension().get();
+      const ownerId = extensionData.id;
+      if (ownerId !== this.ownerId) {
+        return;
+      }
+      const platform = this._client.service.platform();
+      const newAuthData = {
+        token_type: tokenType,
+        access_token: accessToken,
+        expires_in: expiresIn,
+        refresh_token_expires_in: expiresIn,
+        endpoint_id: endpointId,
+      };
+      platform.auth().setData(newAuthData);
+      platform.emit(platform.events.refreshSuccess, newAuthData);
+    } catch (error) {
+      console.error('refreshImplicitToken error:', error);
+    }
+  }
+
+  @proxify
   async checkIsLoggedIn() {
     // SDK would return false when there's temporary network issues,
     // but we should not return use back to welcome string and should
@@ -398,5 +443,12 @@ export default class Auth extends RcModule {
 
   get notLoggedIn() {
     return this.state.loginStatus === loginStatus.notLoggedIn;
+  }
+
+  get isImplicit() {
+    return !(
+      this._client.service.platform()._appSecret &&
+      this._client.service.platform()._appSecret.length > 0
+    );
   }
 }
