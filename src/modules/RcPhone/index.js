@@ -60,6 +60,10 @@ import RecentCalls from '../RecentCalls';
 import Analytics from '../Analytics';
 import AudioSettings from '../AudioSettings';
 import Meeting from '../Meeting';
+import GlipCompany from '../GlipCompany';
+import GlipPersons from '../GlipPersons';
+import GlipPosts from '../GlipPosts';
+import GlipGroups from '../GlipGroups';
 
 @ModuleFactory({
   providers: [
@@ -118,6 +122,10 @@ import Meeting from '../Meeting';
     RecentCalls,
     Analytics,
     Meeting,
+    GlipCompany,
+    GlipPersons,
+    GlipPosts,
+    GlipGroups,
     {
       provide: 'ModuleOptions',
       useValue: { prefix: 'rc-phone' },

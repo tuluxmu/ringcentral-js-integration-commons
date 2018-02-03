@@ -24,9 +24,11 @@ export default class DialingPlan extends DataFetcher {
       name: 'dialingPlan',
       client,
       polling: true,
-      fetchFunction: async () => (await fetchList(params => (
-        client.account().dialingPlan().list(params)
-      ))).map(p => ({
+      fetchFunction: async () => (await fetchList(async (params) => {
+        const platform = client.service.platform();
+        const response = await platform.get('/account/~/dialing-plan', params);
+        return response.json();
+      })).map(p => ({
         id: p.id,
         isoCode: p.isoCode,
         callingCode: p.callingCode,
