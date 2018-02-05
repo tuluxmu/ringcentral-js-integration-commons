@@ -28,7 +28,7 @@ import proxify from '../../lib/proxy/proxify';
     'Storage',
     'RolesAndPermissions',
     { dep: 'TabManager', optional: true },
-    'Webphone',
+    { dep: 'Webphone', optional: true },
     { deps: 'CallingSettingsOptions', optional: true }
   ]
 })
