@@ -3,6 +3,9 @@ import callErrors from '../../modules/Call/callErrors';
 import { waitUntilEqual } from '../utils/WaitUtil';
 
 export default (Auth, Alert, Client, RegionSettings, Call, accountWithMultiDP) => {
+  Call._makeCall = ({ toNumber }) => {
+    Call.__toNumber = toNumber
+  }
   describe('Number Validation when Making Phone Call', async function () {
     this.timeout(10000);
     let conditionalDescribe = describe;
@@ -228,18 +231,20 @@ export default (Auth, Alert, Client, RegionSettings, Call, accountWithMultiDP) =
         } catch (e) {
           console.error(e);
         }
+        expect(Call.__toNumber).to.equal('+16506545672');
         expect(containsErrorMessage(Alert.state.messages, callErrors.noToNumber)).to.equal(undefined);
         expect(containsErrorMessage(Alert.state.messages, callErrors.noAreaCode)).to.equal(undefined);
         expect(containsErrorMessage(Alert.state.messages, callErrors.specialNumber)).to.equal(undefined);
         expect(containsErrorMessage(Alert.state.messages, callErrors.notAnExtension)).to.equal(undefined);
       });
       it('Should Not Alert Anything - Call 7 Digital Number with CA Dialing Plan and Area Code', async function () {
-        RegionSettings.setData({ countryCode: 'CA', areaCode: '650' });
+        RegionSettings.setData({ countryCode: 'CA', areaCode: '250' });
         try {
           await Call.call({ phoneNumber: '6545672' });
         } catch (e) {
           console.error(e);
         }
+        expect(Call.__toNumber).to.equal('+12506545672');
         expect(containsErrorMessage(Alert.state.messages, callErrors.noToNumber)).to.equal(undefined);
         expect(containsErrorMessage(Alert.state.messages, callErrors.noAreaCode)).to.equal(undefined);
         expect(containsErrorMessage(Alert.state.messages, callErrors.specialNumber)).to.equal(undefined);
@@ -252,6 +257,46 @@ export default (Auth, Alert, Client, RegionSettings, Call, accountWithMultiDP) =
         } catch (e) {
           console.error(e);
         }
+        expect(Call.__toNumber).to.equal('+446545672');
+        expect(containsErrorMessage(Alert.state.messages, callErrors.noToNumber)).to.equal(undefined);
+        expect(containsErrorMessage(Alert.state.messages, callErrors.noAreaCode)).to.equal(undefined);
+        expect(containsErrorMessage(Alert.state.messages, callErrors.specialNumber)).to.equal(undefined);
+        expect(containsErrorMessage(Alert.state.messages, callErrors.notAnExtension)).to.equal(undefined);
+      });
+      it('Should Not Alert Anything - Call greater than 7 Digital Number with US Dialing Plan and Area Code', async function () {
+        RegionSettings.setData({ countryCode: 'US', areaCode: '650' });
+        try {
+          await Call.call({ phoneNumber: '2501234567' });
+        } catch (e) {
+          console.error(e);
+        }
+        expect(Call.__toNumber).to.equal('+12501234567');
+        expect(containsErrorMessage(Alert.state.messages, callErrors.noToNumber)).to.equal(undefined);
+        expect(containsErrorMessage(Alert.state.messages, callErrors.noAreaCode)).to.equal(undefined);
+        expect(containsErrorMessage(Alert.state.messages, callErrors.specialNumber)).to.equal(undefined);
+        expect(containsErrorMessage(Alert.state.messages, callErrors.notAnExtension)).to.equal(undefined);
+      });
+      it('Should Not Alert Anything - Call greater than 7 Digital Number with CA Dialing Plan and Area Code', async function () {
+        RegionSettings.setData({ countryCode: 'CA', areaCode: '250' });
+        try {
+          await Call.call({ phoneNumber: '6501234567' });
+        } catch (e) {
+          console.error(e);
+        }
+        expect(Call.__toNumber).to.equal('+16501234567');
+        expect(containsErrorMessage(Alert.state.messages, callErrors.noToNumber)).to.equal(undefined);
+        expect(containsErrorMessage(Alert.state.messages, callErrors.noAreaCode)).to.equal(undefined);
+        expect(containsErrorMessage(Alert.state.messages, callErrors.specialNumber)).to.equal(undefined);
+        expect(containsErrorMessage(Alert.state.messages, callErrors.notAnExtension)).to.equal(undefined);
+      });
+      it('Should Not Alert Anything - Call greater than 7 Digital Number with non US/CA Dialing Plan', async function () {
+        RegionSettings.setData({ countryCode: 'GB', areaCode: '' });
+        try {
+          await Call.call({ phoneNumber: '1234567890' });
+        } catch (e) {
+          console.error(e);
+        }
+        expect(Call.__toNumber).to.equal('+441234567890');
         expect(containsErrorMessage(Alert.state.messages, callErrors.noToNumber)).to.equal(undefined);
         expect(containsErrorMessage(Alert.state.messages, callErrors.noAreaCode)).to.equal(undefined);
         expect(containsErrorMessage(Alert.state.messages, callErrors.specialNumber)).to.equal(undefined);

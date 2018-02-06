@@ -471,6 +471,9 @@ export default (auth, client, account, alert, regionSettings, composeText, messa
             } catch (error) {
               console.debug('message sender e:', error);
             }
+            const rawRequest
+              = clientHistoryRequest.getRawResponse(ClientHistoryRequest.endPoints.sms);
+            expect(rawRequest.to[0].phoneNumber).to.equal('+18558990011');
             expect(containsErrorMessage(alert.state.messages, messageSenderMessages.noAreaCode))
               .to.equal(undefined);
             expect(containsErrorMessage(alert.state.messages, messageSenderMessages.specialNumber))
@@ -491,6 +494,9 @@ export default (auth, client, account, alert, regionSettings, composeText, messa
             } catch (error) {
               console.debug('message sender e:', error);
             }
+            const rawRequest
+              = clientHistoryRequest.getRawResponse(ClientHistoryRequest.endPoints.sms);
+            expect(rawRequest.to[0].phoneNumber).to.equal('+18558990011');
             expect(containsErrorMessage(alert.state.messages, messageSenderMessages.noAreaCode))
               .to.equal(undefined);
             expect(containsErrorMessage(alert.state.messages, messageSenderMessages.specialNumber))
@@ -674,6 +680,9 @@ export default (auth, client, account, alert, regionSettings, composeText, messa
               } catch (error) {
                 console.debug('message sender e:', error);
               }
+              const rawRequest
+                = clientHistoryRequest.getRawResponse(ClientHistoryRequest.endPoints.companyPager);
+              expect(rawRequest.to[0].extensionNumber).to.equal('101');
               expect(containsErrorMessage(alert.state.messages, messageSenderMessages.noAreaCode))
                 .to.equal(undefined);
               expect(containsErrorMessage(alert.state.messages, messageSenderMessages.specialNumber))
