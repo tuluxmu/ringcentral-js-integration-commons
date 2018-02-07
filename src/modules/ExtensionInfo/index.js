@@ -1,4 +1,5 @@
 import mask from 'json-mask';
+import subscriptionFilters from '../../enums/subscriptionFilters';
 import { Module } from '../../lib/di';
 import DataFetcher from '../../lib/DataFetcher';
 
@@ -62,6 +63,10 @@ export default class ExtensionInfo extends DataFetcher {
     super({
       name: 'extensionInfo',
       client,
+      subscriptionFilters: [subscriptionFilters.extensionInfo],
+      subscriptionHandler: async (message) => {
+        await this._subscriptionHandleFn(message);
+      },
       fetchFunction: async () => extractData(await this._client.account().extension().get()),
       ...options
     });
@@ -73,6 +78,15 @@ export default class ExtensionInfo extends DataFetcher {
       this._selectors.info,
       info => (info.serviceFeatures || {}),
     );
+  }
+
+  async _subscriptionHandleFn(message) {
+    if (
+      message &&
+      message.body
+    ) {
+      await this.fetchData();
+    }
   }
 
 
@@ -102,6 +116,6 @@ export default class ExtensionInfo extends DataFetcher {
   }
 
   get isCallQueueMember() {
-    return !!this.departments;
+    return !!this.departments && Array.isArray(this.departments) && this.departments.length > 0;
   }
 }

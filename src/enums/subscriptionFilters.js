@@ -5,4 +5,5 @@ export default new HashMap({
   detailedPresence: '/account/~/extension/~/presence?detailedTelephonyState=true',
   detailedPresenceWithSip: '/account/~/extension/~/presence?detailedTelephonyState=true&sipData=true',
   accountExtension: '/account/~/extension',
+  extensionInfo: '/account/~/extension/~'
 });
