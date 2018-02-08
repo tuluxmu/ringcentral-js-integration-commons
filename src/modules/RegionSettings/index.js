@@ -116,17 +116,24 @@ export default class RegionSettings extends RcModule {
     return this._dialingPlan.plans;
   }
 
+  _alertSettingsChanged() {
+    this._alert.warning({
+      message: regionSettingsMessages.dialingPlansChanged,
+      ttl: 0
+    });
+  }
+
   @proxify
   async checkRegionSettings() {
     let countryCode = this._storage.getItem(this._countryCodeKey);
-    if (countryCode && !this._dialingPlan.plans.find(plan => (
-      plan.isoCode === countryCode
-    ))) {
+    if (
+      countryCode &&
+      !this._dialingPlan.plans.find(plan => (
+        plan.isoCode === countryCode
+      ))
+    ) {
       countryCode = null;
-      this._alert.warning({
-        message: regionSettingsMessages.dialingPlansChanged,
-        ttl: 0
-      });
+      this._alertSettingsChanged();
     }
     if (!countryCode) {
       const country = this._dialingPlan.plans.find(plan => (
