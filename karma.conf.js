@@ -44,19 +44,19 @@ module.exports = function(config) {
 
     webpack: {
       module: {
-        loaders: [
+        rules: [
           {
             test: /\.js$/,
-            loaders: ['babel-loader'],
+            use: ['babel-loader'],
             exclude: /node_modules/,
           },
           {
             test: /\.json$/i,
-            loader: 'json-loader',
+            use: 'json-loader',
           },
           {
             test: /\.ogg$/,
-            loader: 'url?publicPath=./&name=audio/[name]_[hash].[ext]',
+            use: 'url-loader?publicPath=./&name=audio/[name]_[hash].[ext]',
           },
         ],
       },
