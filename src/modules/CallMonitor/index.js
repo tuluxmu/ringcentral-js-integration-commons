@@ -60,11 +60,11 @@ function matchWephoneSessionWithAcitveCall(sessions, callItem) {
  */
 @Module({
   deps: [
-    'Call',
     'AccountInfo',
-    'Webphone',
     'Storage',
     'DetailedPresence',
+    { dep: 'Webphone', optional: true },
+    { dep: 'Call', optional: true },
     { dep: 'ActivityMatcher', optional: true },
     { dep: 'CallMonitorOptions', optional: true }
   ]
