@@ -28,6 +28,8 @@ const DEFAULT_COUNTRY = {
   callingCode: '1',
 };
 
+const extensionRegExp = /.*\/extension\/\d+$/;
+
 function extractData(info) {
   const serviceFeatures = {};
   info.serviceFeatures.forEach((f) => {
@@ -42,6 +44,9 @@ function extractData(info) {
   output.serviceFeatures = serviceFeatures;
   return output;
 }
+
+const DEFAULT_TTL = 30 * 60 * 1000; // half hour update
+const DEFAULT_TIME_TO_RETRY = 62 * 1000;
 
 /**
  * @class
@@ -58,11 +63,17 @@ export default class ExtensionInfo extends DataFetcher {
    */
   constructor({
     client,
+    ttl = DEFAULT_TTL,
+    timeToRetry = DEFAULT_TIME_TO_RETRY,
+    polling = true,
     ...options
   }) {
     super({
       name: 'extensionInfo',
       client,
+      ttl,
+      polling,
+      timeToRetry,
       subscriptionFilters: [subscriptionFilters.extensionInfo],
       subscriptionHandler: async (message) => {
         await this._subscriptionHandleFn(message);
@@ -83,7 +94,8 @@ export default class ExtensionInfo extends DataFetcher {
   async _subscriptionHandleFn(message) {
     if (
       message &&
-      message.body
+      message.body &&
+      extensionRegExp.test(message.event)
     ) {
       await this.fetchData();
     }
