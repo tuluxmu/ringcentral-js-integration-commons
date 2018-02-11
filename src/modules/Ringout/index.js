@@ -64,7 +64,7 @@ export default class Ringout extends RcModule {
         type: this.actionTypes.startToConnect
       });
       try {
-        const resp = await this._client.account().extension().ringout().post({
+        const resp = await this._client.account().extension().ringOut().post({
           from: { phoneNumber: fromNumber },
           to: { phoneNumber: toNumber },
           playPrompt: prompt
@@ -105,7 +105,7 @@ export default class Ringout extends RcModule {
   @proxify
   async _fetchRingoutStatus(ringoutId) {
     try {
-      const resp = await this._client.account().extension().ringout(ringoutId).get();
+      const resp = await this._client.account().extension().ringOut(ringoutId).get();
       return resp.status.callerStatus;
     } catch (e) {
       const exception = new Error(ringoutErrors.pollingFailed);
