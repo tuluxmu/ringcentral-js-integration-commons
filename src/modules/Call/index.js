@@ -24,10 +24,10 @@ import ringoutErrors from '../Ringout/ringoutErrors';
     'Storage',
     'Softphone',
     'Ringout',
-    'Webphone',
     'NumberValidate',
     'RegionSettings',
     'CallingSettings',
+    { provide: 'Webphone', optional: true },
     { provide: 'CallOptions', optional: true }
   ]
 })
