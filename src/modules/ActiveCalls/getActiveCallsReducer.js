@@ -1,5 +1,4 @@
 
-import removeUri from '../../lib/removeUri';
 import {
   normalizeStartTime,
   sortByStartTime,
@@ -10,7 +9,7 @@ export function getDataReducer(types) {
     switch (type) {
       case types.fetchSuccess:
         return data
-          .map(call => normalizeStartTime(removeUri(call)))
+          .map(call => normalizeStartTime(call))
           .sort(sortByStartTime);
       case types.resetSuccess:
         return null;

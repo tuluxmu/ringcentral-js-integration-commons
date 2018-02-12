@@ -7,7 +7,7 @@ import {
   getDataReducer
 } from './getActiveCallsReducer';
 
-const presenceRegExp = /\/presence\?detailedTelephonyState=true$/;
+const presenceRegExp = /\/presence\?detailedTelephonyState=true/;
 const FETCH_DELAY = 1000;
 const DEFAULT_TTL = 5 * 60 * 1000;
 
@@ -20,7 +20,7 @@ const DEFAULT_TTL = 5 * 60 * 1000;
     'Client',
     'RolesAndPermissions',
     { dep: 'TabManager', optional: true },
-    { dep: 'AccountPhoneNumberOptions', optional: true }
+    { dep: 'ActiveCallsOptions', optional: true }
   ]
 })
 export default class ActiveCalls extends DataFetcher {
@@ -34,6 +34,7 @@ export default class ActiveCalls extends DataFetcher {
     client,
     rolesAndPermissions,
     tabManager, // do not pass tabManager to DataFetcher as data is not shared in localStorage
+    fetchDelay = FETCH_DELAY,
     ttl = DEFAULT_TTL,
     ...options
   }) {
@@ -43,11 +44,11 @@ export default class ActiveCalls extends DataFetcher {
       client,
       ttl,
       getDataReducer,
-      subscriptionFilters: [subscriptionFilters.detailedPresence],
+      subscriptionFilters: [subscriptionFilters.detailedPresenceWithSip],
       subscriptionHandler: async (message) => {
         if (presenceRegExp.test(message.event)) {
-          const ownerId = this._auth.ownerId;
-          await sleep(FETCH_DELAY);
+          const { ownerId } = this._auth;
+          await sleep(this._fetchDelay);
           if (ownerId === this._auth.ownerId) {
             await this.fetchData();
           }
@@ -57,6 +58,7 @@ export default class ActiveCalls extends DataFetcher {
         this._client.account().extension().activeCalls().list(params)
       )
     });
+    this._fetchDelay = fetchDelay;
     this._rolesAndPermissions = rolesAndPermissions;
     this.addSelector(
       'calls',
