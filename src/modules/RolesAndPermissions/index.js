@@ -135,9 +135,11 @@ export default class RolesAndPermissions extends DataFetcher {
 
   get hasPresencePermission() {
     return !!(
-      this.serviceFeatures && (
-        this.serviceFeatures.Presence &&
-        this.serviceFeatures.Presence.enabled
+      this.ready &&
+      this.callingEnabled &&
+      this.permissions && (
+        this.permissions.ReadPresenceStatus &&
+        this.permissions.EditPresenceStatus
       )
     );
   }
@@ -190,5 +192,9 @@ export default class RolesAndPermissions extends DataFetcher {
         this.serviceFeatures.FaxReceiving.enabled
       )
     );
+  }
+
+  get hasUserGuidePermission() {
+    return !!(this.callingEnabled || this.hasReadMessagesPermission);
   }
 }
