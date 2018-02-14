@@ -29,7 +29,7 @@ import proxify from '../../lib/proxy/proxify';
     'RolesAndPermissions',
     { dep: 'TabManager', optional: true },
     { dep: 'Webphone', optional: true },
-    { deps: 'CallingSettingsOptions', optional: true }
+    { dep: 'CallingSettingsOptions', optional: true }
   ]
 })
 export default class CallingSettings extends RcModule {

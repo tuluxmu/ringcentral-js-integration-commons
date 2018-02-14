@@ -27,8 +27,8 @@ import ringoutErrors from '../Ringout/ringoutErrors';
     'NumberValidate',
     'RegionSettings',
     'CallingSettings',
-    { provide: 'Webphone', optional: true },
-    { provide: 'CallOptions', optional: true }
+    { dep: 'Webphone', optional: true },
+    { dep: 'CallOptions', optional: true }
   ]
 })
 export default class Call extends RcModule {
