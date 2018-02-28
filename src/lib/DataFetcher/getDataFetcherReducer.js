@@ -2,9 +2,28 @@ import { combineReducers } from 'redux';
 import getModuleStatusReducer from '../getModuleStatusReducer';
 
 export function getDefaultDataReducer(types) {
-  return (state = null, { type, data }) => {
-    if (type === types.fetchSuccess) return data;
-    return state;
+  return (state = null, {
+    type,
+    data,
+    cleanOnReset = false,
+    hasPermission = true
+  }) => {
+    switch (type) {
+      case types.fetchSuccess:
+        return data;
+      case types.initSuccess:
+        if (hasPermission) {
+          return state;
+        }
+        return null;
+      case types.resetSuccess:
+        if (cleanOnReset) {
+          return null;
+        }
+        return state;
+      default:
+        return state;
+    }
   };
 }
 

@@ -300,7 +300,7 @@ export function restore() {
   fetchMock.restore();
 }
 
-export function mockForLogin() {
+export function mockForLogin({ mockAuthzProfile = true } = {}) {
   authentication();
   logout();
   tokenRefresh();
@@ -309,7 +309,9 @@ export function mockForLogin() {
   extensionInfo();
   accountInfo();
   apiInfo();
-  authzProfile();
+  if (mockAuthzProfile) {
+    authzProfile();
+  }
   extensionList();
   blockedNumber();
   forwardingNumber();

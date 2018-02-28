@@ -1,13 +1,21 @@
+import { createSelector } from 'reselect';
+
 import { Module } from '../../lib/di';
 import DataFetcher from '../../lib/DataFetcher';
 import fetchList from '../../lib/fetchList';
 import ensureExist from '../../lib/ensureExist';
+import getter from '../../lib/getter';
+
 /**
  * @class
  * @description Extension forwarding number list module
  */
 @Module({
-  deps: ['Client', 'RolesAndPermissions', { dep: 'ForwardingNumberOptions', optional: true }]
+  deps: [
+    'Client',
+    'RolesAndPermissions',
+    { dep: 'ForwardingNumberOptions', optional: true }
+  ]
 })
 export default class ForwardingNumber extends DataFetcher {
   /**
@@ -24,12 +32,12 @@ export default class ForwardingNumber extends DataFetcher {
       name: 'forwardingNumber',
       client,
       fetchFunction: async () => {
-        if (!this._rolesAndPermissions.permissions.ReadUserForwardingFlipNumbers) {
-          return [];
-        }
-        return fetchList(params => (
-          this._client.account().extension().forwardingNumber().list(params)
-        )).catch((error) => {
+        try {
+          const lists = await fetchList(params => (
+            this._client.account().extension().forwardingNumber().list(params)
+          ));
+          return lists;
+        } catch (error) {
           if (
             error &&
             error.apiResponse &&
@@ -39,41 +47,36 @@ export default class ForwardingNumber extends DataFetcher {
             return [];
           }
           throw error;
-        });
+        }
       },
       readyCheckFn: () => this._rolesAndPermissions.ready,
+      cleanOnReset: true,
       ...options,
     });
     this._rolesAndPermissions = this::ensureExist(rolesAndPermissions, 'rolesAndPermissions');
-
-    this.addSelector(
-      'flipNumbers',
-      () => this.numbers,
-      phoneNumbers =>
-        phoneNumbers.filter(p => p.features.indexOf('CallFlip') !== -1 && p.phoneNumber)
-    );
-    this.addSelector(
-      'numbers',
-      () => this.data,
-      data => data || [],
-    );
-    this.addSelector(
-      'forwardingNumbers',
-      () => this.numbers,
-      phoneNumbers =>
-        phoneNumbers.filter(p => p.features.indexOf('CallForwarding') !== -1 && p.phoneNumber)
-    );
   }
 
-  get numbers() {
-    return this._selectors.numbers();
-  }
+  @getter
+  numbers = createSelector(
+    () => this.data,
+    data => data || [],
+  )
 
-  get flipNumbers() {
-    return this._selectors.flipNumbers();
-  }
+  @getter
+  flipNumbers = createSelector(
+    () => this.numbers,
+    phoneNumbers =>
+      phoneNumbers.filter(p => p.features.indexOf('CallFlip') !== -1 && p.phoneNumber)
+  )
 
-  get forwardingNumbers() {
-    return this._selectors.forwardingNumbers();
+  @getter
+  forwardingNumbers = createSelector(
+    () => this.numbers,
+    phoneNumbers =>
+      phoneNumbers.filter(p => p.features.indexOf('CallForwarding') !== -1 && p.phoneNumber)
+  )
+
+  get _hasPermission() {
+    return !!this._rolesAndPermissions.permissions.ReadUserForwardingFlipNumbers;
   }
 }

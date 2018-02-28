@@ -45,6 +45,7 @@ export default class DataFetcher extends Pollable {
     subscriptionFilters,
     subscriptionHandler,
     readyCheckFn,
+    cleanOnReset = false,
     ...options
   }) {
     if (!name) {
@@ -71,6 +72,7 @@ export default class DataFetcher extends Pollable {
     this._subscriptionFilters = subscriptionFilters;
     this._subscriptionHandler = subscriptionHandler;
     this._readyCheckFn = readyCheckFn;
+    this._cleanOnReset = cleanOnReset;
 
     this._dataStorageKey = dataStorageKey;
     this._timestampStorageKey = timestampStorageKey;
@@ -109,17 +111,20 @@ export default class DataFetcher extends Pollable {
       } else {
         this.store.dispatch({
           type: this.actionTypes.initSuccess,
+          hasPermission: false
         });
       }
     } else if (this._isDataReady()) {
       this.store.dispatch({
         type: this.actionTypes.initSuccess,
+        hasPermission: this._hasPermission
       });
     } else if (this._shouldReset()) {
       this._clearTimeout();
       this._promise = null;
       this.store.dispatch({
         type: this.actionTypes.resetSuccess,
+        cleanOnReset: this._cleanOnReset,
       });
     } else if (this._shouldSubscribe()) {
       this._processSubscription();

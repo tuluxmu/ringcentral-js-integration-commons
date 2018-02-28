@@ -11,7 +11,7 @@ export function containsErrorMessage(errorArray, errorMessageString) {
 }
 
 export async function ensureLogin(auth, account) {
-  auth.login({
+  await auth.login({
     ...account,
   });
   return await waitUntilNotNull(() => auth.ownerId, 'Login Success', 6);

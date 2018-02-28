@@ -225,6 +225,7 @@ export default class Phone extends RcModule {
       auth: this.auth,
       storage: this.storage,
       client: this.client,
+      rolesAndPermissions: this.rolesAndPermissions,
       getState: () => this.state.blockedNumber,
     }));
     this.addModule('regionSettings', new RegionSettings({

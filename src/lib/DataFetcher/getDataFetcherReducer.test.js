@@ -30,6 +30,46 @@ describe('getDefaultDataReducer', () => {
         data,
       })).to.equal(data);
     });
+    it('should return original state on initSuccess', () => {
+      const originalState = [];
+      expect(reducer(originalState, {
+        type: actionTypes.initSuccess,
+      })).to.equal(originalState);
+    });
+    it('should return null on initSuccess when permission is false', () => {
+      const originalState = [];
+      expect(reducer(originalState, {
+        type: actionTypes.initSuccess,
+        hasPermission: false,
+      })).to.equal(null);
+    });
+    it('should return originalState on initSuccess when permission is true', () => {
+      const originalState = [];
+      expect(reducer(originalState, {
+        type: actionTypes.initSuccess,
+        hasPermission: true,
+      })).to.equal(originalState);
+    });
+    it('should return original state on resetSuccess', () => {
+      const originalState = [];
+      expect(reducer(originalState, {
+        type: actionTypes.resetSuccess,
+      })).to.equal(originalState);
+    });
+    it('should return original state on resetSuccess when cleanOnReset is false', () => {
+      const originalState = [];
+      expect(reducer(originalState, {
+        type: actionTypes.resetSuccess,
+        cleanOnReset: false,
+      })).to.equal(originalState);
+    });
+    it('should return original state on resetSuccess', () => {
+      const originalState = [];
+      expect(reducer(originalState, {
+        type: actionTypes.resetSuccess,
+        cleanOnReset: true,
+      })).to.equal(null);
+    });
   });
 });
 

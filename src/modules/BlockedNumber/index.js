@@ -1,13 +1,21 @@
+import { createSelector } from 'reselect';
+
 import { Module } from '../../lib/di';
 import DataFetcher from '../../lib/DataFetcher';
 import fetchList from '../../lib/fetchList';
+import getter from '../../lib/getter';
+import ensureExist from '../../lib/ensureExist';
 
 /**
  * @class
  * @description Blocked number list managing module
  */
 @Module({
-  deps: ['Client', { dep: 'BlockedNumberOptions', optional: true }]
+  deps: [
+    'Client',
+    'RolesAndPermissions',
+    { dep: 'BlockedNumberOptions', optional: true }
+  ]
 })
 export default class BlockedNumber extends DataFetcher {
   /**
@@ -17,6 +25,7 @@ export default class BlockedNumber extends DataFetcher {
    */
   constructor({
     client,
+    rolesAndPermissions,
     ...options
   }) {
     super({
@@ -26,15 +35,20 @@ export default class BlockedNumber extends DataFetcher {
       fetchFunction: async () => fetchList(params => (
         this._client.account().extension().blockedNumber().list(params)
       )),
+      readyCheckFn: () => this._rolesAndPermissions.ready,
+      cleanOnReset: true,
     });
-    this.addSelector(
-      'numbers',
-      () => this.data,
-      data => data || [],
-    );
+
+    this._rolesAndPermissions = this::ensureExist(rolesAndPermissions, 'rolesAndPermissions');
   }
 
-  get numbers() {
-    return this._selectors.numbers();
+  @getter
+  numbers = createSelector(
+    () => this.data,
+    data => data || [],
+  )
+
+  get _hasPermission() {
+    return !!this._rolesAndPermissions.permissions.ReadBlockedNumbers;
   }
 }

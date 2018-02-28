@@ -53,6 +53,7 @@ export default class RolesAndPermissions extends DataFetcher {
         await this._client.account().extension().authzProfile().get()
       ),
       readyCheckFn: () => this._extensionInfo.ready,
+      cleanOnReset: true,
     });
     this._isCRM = !!isCRM;
     this._flag = flag || 'SalesForce';
