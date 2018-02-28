@@ -1,6 +1,5 @@
 import RcModule from '../../lib/RcModule';
 import { Module } from '../../lib/di';
-import sleep from '../../lib/sleep';
 import loginStatus from '../Auth/loginStatus';
 import moduleStatuses from '../../enums/moduleStatuses';
 import getSubscriptionReducer, {
@@ -63,6 +62,7 @@ export default class Subscription extends RcModule {
         this._storage.ready &&
         this.status === moduleStatuses.pending
       ) {
+        this._startSleepDetection();
         this.store.dispatch({
           type: this.actionTypes.initSuccess,
         });
@@ -107,20 +107,26 @@ export default class Subscription extends RcModule {
   get cachedSubscription() {
     return this._storage.getItem(this._cacheStorageKey);
   }
-
-  async _detectSleep() {
-    while (this._subscription) {
-      const t = Date.now();
-      await sleep(10000);
-      if (this.ready && this._subscribe && Date.now() - t > 20 * 1000) {
-        // a time lapse of 10 seconds is detected
-        await this.remove();
-        await this._subscribe();
-        break;
-      }
+  _startSleepDetection() {
+    this._stopSleepDetection();
+    this._detectSleep();
+  }
+  _stopSleepDetection() {
+    if (this._sleepTimeout) {
+      clearTimeout(this._sleepTimeout);
+      this._sleepTimeout = null;
     }
   }
-
+  _detectSleep() {
+    const t = Date.now();
+    this._sleepTimeout = setTimeout(async () => {
+      if (this.ready && this._subscription && Date.now() - t > 20 * 1000) {
+        await this.remove();
+        await this._subscribe();
+      }
+      this._detectSleep();
+    }, 10 * 1000);
+  }
   _createSubscription() {
     this._subscription = this._client.service.createSubscription();
     if (this.cachedSubscription) {
@@ -188,7 +194,6 @@ export default class Subscription extends RcModule {
         this._retry();
       }
     });
-    this._detectSleep();
   }
 
   _register() {
@@ -291,6 +296,7 @@ export default class Subscription extends RcModule {
     this.store.dispatch({
       type: this.actionTypes.reset,
     });
+    this._stopSleepDetection();
     this._stopRetry();
     if (this._subscription) {
       if (this._auth.loggedIn) {
