@@ -17,6 +17,7 @@ const phoneNumberBody = require('./data/phoneNumber');
 const presenceBody = require('./data/presence.json');
 const numberParserBody = require('./data/numberParser.json');
 const smsBody = require('./data/sms.json');
+const ringOutBody = require('./data/ringOut.json');
 
 const mockServer = 'http://whatever';
 export function createSDK(options = {}) {
@@ -45,6 +46,7 @@ export function mockApi({
   status = 200,
   statusText = 'OK',
   headers,
+  isOnce = true,
 }) {
   let responseHeaders;
   const isJson = typeof body !== 'string';
@@ -59,7 +61,8 @@ export function mockApi({
   } else {
     mockUrl = `${server}${path}`;
   }
-  fetchMock.once(mockUrl, {
+  const mock = isOnce ? fetchMock.once.bind(fetchMock) : fetchMock.mock.bind(fetchMock);
+  mock(mockUrl, {
     body: isJson ? JSON.stringify(body) : body,
     status,
     statusText,
@@ -322,4 +325,27 @@ export function mockForLogin({ mockAuthzProfile = true } = {}) {
 
 export function mockClient(client) {
   client.service = createSDK({});
+}
+
+export function ringOut(mockResponse = {}) {
+  mockApi({
+    isOnce: false,
+    method: 'POST',
+    url: `${mockServer}/restapi/v1.0/account/~/extension/~/ring-out`,
+    body: {
+      ...ringOutBody,
+      ...mockResponse,
+    }
+  });
+}
+
+export function ringOutUpdate(mockResponse = {}) {
+  mockApi({
+    isOnce: false,
+    url: `begin:${mockServer}/restapi/v1.0/account/~/extension/~/ring-out/`,
+    body: {
+      ...ringOutBody,
+      ...mockResponse,
+    }
+  });
 }
