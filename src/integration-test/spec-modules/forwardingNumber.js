@@ -85,5 +85,20 @@ export default (auth, client, forwardingNumber, account) => {
         expect(forwardingNumber.forwardingNumbers.length).equal(0);
       });
     });
+
+    it('Should show insufficientPrivilege when get 403', async () => {
+      mock.restore();
+      mock.mockForLogin({ mockForwardingNumber: false });
+      mock.mockForbidden({ url: 'begin:http://whatever/restapi/v1.0/account/~/extension/~/forwarding-number' });
+      isLoginSuccess = await ensureLogin(auth, account);
+      if (!isLoginSuccess) {
+        console.error('Skip test case as failed to login with credential ', account);
+        this.skip();
+      }
+      await waitInSeconds(1);
+      expect(forwardingNumber.numbers.length).equal(0);
+      await auth.logout();
+      await waitInSeconds(1);
+    });
   });
 };

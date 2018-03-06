@@ -32,23 +32,12 @@ export default class ForwardingNumber extends DataFetcher {
       name: 'forwardingNumber',
       client,
       fetchFunction: async () => {
-        try {
-          const lists = await fetchList(params => (
-            this._client.account().extension().forwardingNumber().list(params)
-          ));
-          return lists;
-        } catch (error) {
-          if (
-            error &&
-            error.apiResponse &&
-            error.apiResponse._response &&
-            error.apiResponse._response.status === 403
-          ) {
-            return [];
-          }
-          throw error;
-        }
+        const lists = await fetchList(params => (
+          this._client.account().extension().forwardingNumber().list(params)
+        ));
+        return lists;
       },
+      forbiddenHandler: () => [],
       readyCheckFn: () => this._rolesAndPermissions.ready,
       cleanOnReset: true,
       ...options,

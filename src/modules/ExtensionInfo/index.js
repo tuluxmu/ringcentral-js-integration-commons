@@ -2,6 +2,7 @@ import mask from 'json-mask';
 import subscriptionFilters from '../../enums/subscriptionFilters';
 import { Module } from '../../lib/di';
 import DataFetcher from '../../lib/DataFetcher';
+import permissionsMessages from '../RolesAndPermissions/permissionsMessages';
 
 const DEFAULT_MASK = [
   'id',
@@ -53,7 +54,11 @@ const DEFAULT_TIME_TO_RETRY = 62 * 1000;
  * @description Extension info module
  */
 @Module({
-  deps: ['Client', { dep: 'ExtensionInfoOptions', optional: true }]
+  deps: [
+    'Client',
+    { dep: 'Alert', optional: true },
+    { dep: 'ExtensionInfoOptions', optional: true }
+  ]
 })
 export default class ExtensionInfo extends DataFetcher {
   /**
@@ -66,6 +71,7 @@ export default class ExtensionInfo extends DataFetcher {
     ttl = DEFAULT_TTL,
     timeToRetry = DEFAULT_TIME_TO_RETRY,
     polling = true,
+    alert,
     ...options
   }) {
     super({
@@ -78,9 +84,23 @@ export default class ExtensionInfo extends DataFetcher {
       subscriptionHandler: async (message) => {
         await this._subscriptionHandleFn(message);
       },
+      cleanOnReset: true,
       fetchFunction: async () => extractData(await this._client.account().extension().get()),
+      forbiddenHandler: async () => {
+        await this._auth.logout();
+        if (this._alert) {
+          this._alert.danger({
+            message: permissionsMessages.insufficientPrivilege,
+            ttl: 0,
+          });
+        }
+        return {};
+      },
       ...options
     });
+
+    this._alert = alert;
+
     this.addSelector('info',
       () => this.data,
       data => (data || {}),

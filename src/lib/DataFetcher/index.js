@@ -42,6 +42,7 @@ export default class DataFetcher extends Pollable {
     dataStorageKey = `${name}Data`,
     timestampStorageKey = `${name}Timestamp`,
     fetchFunction,
+    forbiddenHandler,
     subscriptionFilters,
     subscriptionHandler,
     readyCheckFn,
@@ -69,6 +70,7 @@ export default class DataFetcher extends Pollable {
     this._timeToRetry = timeToRetry;
     this._polling = polling;
     this._fetchFunction = fetchFunction;
+    this._forbiddenHandler = forbiddenHandler;
     this._subscriptionFilters = subscriptionFilters;
     this._subscriptionHandler = subscriptionHandler;
     this._readyCheckFn = readyCheckFn;
@@ -235,6 +237,26 @@ export default class DataFetcher extends Pollable {
     return true;
   }
 
+  // handle 403 Forbidden error
+  async _fetchWithForbiddenCheck() {
+    try {
+      const data = await this._fetchFunction();
+      return data;
+    } catch (error) {
+      if (
+        error &&
+        error.apiResponse &&
+        error.apiResponse._response &&
+        error.apiResponse._response.status === 403 &&
+        typeof this._forbiddenHandler === 'function'
+      ) {
+        const result = await this._forbiddenHandler(error);
+        return result;
+      }
+      throw error;
+    }
+  }
+
   @proxify
   async _fetchData() {
     this.store.dispatch({
@@ -242,7 +264,7 @@ export default class DataFetcher extends Pollable {
     });
     const { ownerId } = this._auth;
     try {
-      const data = await this._fetchFunction();
+      const data = await this._fetchWithForbiddenCheck();
       if (this._auth.ownerId === ownerId) {
         this.store.dispatch({
           type: this.actionTypes.fetchSuccess,

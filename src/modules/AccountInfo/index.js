@@ -1,6 +1,10 @@
 import mask from 'json-mask';
 import { Module } from '../../lib/di';
 import DataFetcher from '../../lib/DataFetcher';
+import ensureExist from '../../lib/ensureExist';
+
+import loginStatus from '../Auth/loginStatus';
+import permissionsMessages from '../RolesAndPermissions/permissionsMessages';
 
 const DEFAULT_MASK = [
   'id,mainNumber,status',
@@ -20,7 +24,12 @@ const DEFAULT_MASK = [
  * @description Accound info managing module.
  */
 @Module({
-  deps: ['Client', { dep: 'AccountInfoOptions', optional: true }]
+  deps: [
+    'Client',
+    'RolesAndPermissions',
+    'Alert',
+    { dep: 'AccountInfoOptions', optional: true }
+  ]
 })
 export default class AccountInfo extends DataFetcher {
   /**
@@ -30,19 +39,43 @@ export default class AccountInfo extends DataFetcher {
    */
   constructor({
     client,
+    rolesAndPermissions,
+    alert,
     ...options
   }) {
     super({
       name: 'accountInfo',
       client,
       fetchFunction: async () => mask(await client.account().get(), DEFAULT_MASK),
+      readyCheckFn: () => this._rolesAndPermissions.ready,
       ...options,
     });
+
+    this._rolesAndPermissions = this::ensureExist(rolesAndPermissions, 'rolesAndPermissions');
+    this._alert = alert;
+
     this.addSelector(
       'info',
       () => this.data,
       data => data || {},
     );
+  }
+
+  async _onStateChange() {
+    await super._onStateChange();
+    if (
+      this._auth.loginStatus === loginStatus.loggedIn &&
+      this.ready &&
+      !this._hasPermission
+    ) {
+      await this._auth.logout();
+      if (this._alert) {
+        this._alert.danger({
+          message: permissionsMessages.insufficientPrivilege,
+          ttl: 0,
+        });
+      }
+    }
   }
 
   get info() {
@@ -63,5 +96,9 @@ export default class AccountInfo extends DataFetcher {
 
   get mainCompanyNumber() {
     return this.info.mainNumber;
+  }
+
+  get _hasPermission() {
+    return !!this._rolesAndPermissions.permissions.ReadCompanyInfo;
   }
 }

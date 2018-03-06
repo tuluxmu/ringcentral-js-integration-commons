@@ -1,8 +1,12 @@
 import 'core-js/fn/array/find';
+import { createSelector } from 'reselect';
+
 import { Module } from '../../lib/di';
 import fetchList from '../../lib/fetchList';
 import DataFetcher from '../../lib/DataFetcher';
 import removeUri from '../../lib/removeUri';
+import getter from '../../lib/getter';
+import ensureExist from '../../lib/ensureExist';
 
 import { getDataReducer } from './getReducer';
 
@@ -17,6 +21,7 @@ function simplifyPhoneNumber(number) {
 @Module({
   deps: [
     'Client',
+    'RolesAndPermissions',
     { dep: 'AccountPhoneNumberOptions', optional: true }
   ]
 })
@@ -28,6 +33,7 @@ export default class AccountPhoneNumber extends DataFetcher {
    */
   constructor({
     client,
+    rolesAndPermissions,
     ...options
   }) {
     super({
@@ -37,38 +43,37 @@ export default class AccountPhoneNumber extends DataFetcher {
       fetchFunction: async () => (await fetchList(params => (
         client.account().phoneNumber().list(params)
       ))).map(simplifyPhoneNumber),
+      readyCheckFn: () => this._rolesAndPermissions.ready,
       ...options,
     });
 
-    this.addSelector(
-      'numbers',
-      () => this.data,
-      data => data || [],
-    );
+    this._rolesAndPermissions = this::ensureExist(rolesAndPermissions, 'rolesAndPermissions');
+  }
 
-    this.addSelector(
-      'extensionToPhoneNumberMap',
-      () => this.numbers,
-      (numbers) => {
-        const numberMap = {};
-        numbers.forEach((number) => {
-          if (number.extension && number.extension.extensionNumber) {
-            if (!numberMap[number.extension.extensionNumber]) {
-              numberMap[number.extension.extensionNumber] = [];
-            }
-            numberMap[number.extension.extensionNumber].push(number);
+  @getter
+  numbers = createSelector(
+    () => this.data,
+    data => data || [],
+  )
+
+  @getter
+  extensionToPhoneNumberMap = createSelector(
+    () => this.numbers,
+    (numbers) => {
+      const numberMap = {};
+      numbers.forEach((number) => {
+        if (number.extension && number.extension.extensionNumber) {
+          if (!numberMap[number.extension.extensionNumber]) {
+            numberMap[number.extension.extensionNumber] = [];
           }
-        });
-        return numberMap;
-      },
-    );
-  }
+          numberMap[number.extension.extensionNumber].push(number);
+        }
+      });
+      return numberMap;
+    },
+  )
 
-  get numbers() {
-    return this._selectors.numbers();
-  }
-
-  get extensionToPhoneNumberMap() {
-    return this._selectors.extensionToPhoneNumberMap();
+  get _hasPermission() {
+    return !!this._rolesAndPermissions.permissions.ReadCompanyPhoneNumbers;
   }
 }

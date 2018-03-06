@@ -1,14 +1,22 @@
+import { createSelector } from 'reselect';
+
 import { Module } from '../../lib/di';
 import fetchList from '../../lib/fetchList';
 import DataFetcher from '../../lib/DataFetcher';
 import moduleStatuses from '../../enums/moduleStatuses';
+import ensureExist from '../../lib/ensureExist';
+import getter from '../../lib/getter';
 
 /**
  * @class
  * @description Dial plan list managing module
  */
 @Module({
-  deps: ['Client', { dep: 'DialingPlanOptions', optional: true }]
+  deps: [
+    'Client',
+    'RolesAndPermissions',
+    { dep: 'DialingPlanOptions', optional: true }
+  ]
 })
 export default class DialingPlan extends DataFetcher {
   /**
@@ -18,6 +26,7 @@ export default class DialingPlan extends DataFetcher {
    */
   constructor({
     client,
+    rolesAndPermissions,
     ...options
   }) {
     super({
@@ -33,15 +42,18 @@ export default class DialingPlan extends DataFetcher {
         isoCode: p.isoCode,
         callingCode: p.callingCode,
       })),
+      readyCheckFn: () => this._rolesAndPermissions.ready,
       ...options,
     });
 
-    this.addSelector(
-      'plans',
-      () => this.data,
-      data => data || [],
-    );
+    this._rolesAndPermissions = this::ensureExist(rolesAndPermissions, 'rolesAndPermissions');
   }
+
+  @getter
+  plans = createSelector(
+    () => this.data,
+    data => data || [],
+  )
 
   get plans() {
     return this._selectors.plans();
@@ -53,6 +65,10 @@ export default class DialingPlan extends DataFetcher {
 
   get ready() {
     return this.state.status === moduleStatuses.ready;
+  }
+
+  get _hasPermission() {
+    return !!this._rolesAndPermissions.permissions.ReadCompanyInfo;
   }
 }
 

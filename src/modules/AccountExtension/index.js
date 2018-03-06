@@ -1,7 +1,10 @@
 import 'core-js/fn/array/find';
+import { createSelector } from 'reselect';
 import { Module } from '../../lib/di';
 import DataFetcher from '../../lib/DataFetcher';
 import fetchList from '../../lib/fetchList';
+import ensureExist from '../../lib/ensureExist';
+import getter from '../../lib/getter';
 
 import actionTypes from './actionTypes';
 import {
@@ -25,6 +28,7 @@ const DEFAULT_TTL = 24 * 60 * 60 * 1000;
 @Module({
   deps: [
     'Client',
+    'RolesAndPermissions',
     { dep: 'AccountExtensionOptions', optional: true }
   ]
 })
@@ -37,6 +41,7 @@ export default class AccountExtension extends DataFetcher {
    */
   constructor({
     client,
+    rolesAndPermissions,
     ttl = DEFAULT_TTL,
     ...options
   }) {
@@ -55,13 +60,10 @@ export default class AccountExtension extends DataFetcher {
       fetchFunction: async () => (await fetchList(params => (
         this._client.account().extension().list(params)
       ))).filter(isEssential).map(simplifyExtensionData),
+      readyCheckFn: () => this._rolesAndPermissions.ready,
     });
 
-    this.addSelector(
-      'availableExtensions',
-      () => this.data,
-      data => data || [],
-    );
+    this._rolesAndPermissions = this::ensureExist(rolesAndPermissions, 'rolesAndPermissions');
   }
 
   async _subscriptionHandleFn(message) {
@@ -125,11 +127,17 @@ export default class AccountExtension extends DataFetcher {
     return this._client.account().extension(id).get();
   }
 
-  get availableExtensions() {
-    return this._selectors.availableExtensions();
-  }
+  @getter
+  availableExtensions = createSelector(
+    () => this.data,
+    data => data || [],
+  )
 
   isAvailableExtension(extensionNumber) {
     return !!this.availableExtensions.find(item => item.ext === extensionNumber);
+  }
+
+  get _hasPermission() {
+    return !!this._rolesAndPermissions.permissions.ReadExtensions;
   }
 }
