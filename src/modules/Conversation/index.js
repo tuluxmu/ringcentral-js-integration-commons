@@ -1,6 +1,9 @@
+import { createSelector } from 'reselect';
 import RcModule from '../../lib/RcModule';
 import { Module } from '../../lib/di';
+import getter from '../../lib/getter';
 import moduleStatuses from '../../enums/moduleStatuses';
+import messageSenderMessages from '../MessageSender/messageSenderMessages';
 
 import {
   getMyNumberFromMessage,
@@ -18,7 +21,7 @@ import proxify from '../../lib/proxy/proxify';
  * @description Conversation managing module
  */
 @Module({
-  deps: ['MessageSender', 'ExtensionInfo', 'MessageStore']
+  deps: ['Alert', 'MessageSender', 'ExtensionInfo', 'MessageStore'],
 })
 export default class Conversation extends RcModule {
   /**
@@ -29,6 +32,7 @@ export default class Conversation extends RcModule {
    * @param {MessageStore} params.messageStore - messageStore module instance
    */
   constructor({
+    alert,
     messageSender,
     extensionInfo,
     messageStore,
@@ -38,6 +42,7 @@ export default class Conversation extends RcModule {
       ...options,
       actionTypes,
     });
+    this._alert = alert;
     this._reducer = getConversationReducer(this.actionTypes);
     this._messageSender = messageSender;
     this._extensionInfo = extensionInfo;
@@ -71,11 +76,9 @@ export default class Conversation extends RcModule {
 
   _shouldReset() {
     return (
-      (
-        !this._extensionInfo.ready ||
+      (!this._extensionInfo.ready ||
         !this._messageSender.ready ||
-        !this._messageStore.ready
-      ) &&
+        !this._messageStore.ready) &&
       this.ready
     );
   }
@@ -83,7 +86,7 @@ export default class Conversation extends RcModule {
   _shouldReloadConversation() {
     return (
       this.ready &&
-      (!!this.id) &&
+      !!this.id &&
       this.messageStoreUpdatedAt !== this._messageStore.updatedTimestamp
     );
   }
@@ -135,8 +138,10 @@ export default class Conversation extends RcModule {
       return;
     }
     const recipients = this.recipients.slice();
-    const defaultNumberIndex = recipients.findIndex(number =>
-      (number.extensionNumber === phoneNumber || number.phoneNumber === phoneNumber)
+    const defaultNumberIndex = recipients.findIndex(
+      number =>
+        number.extensionNumber === phoneNumber ||
+        number.phoneNumber === phoneNumber,
     );
     if (defaultNumberIndex < 0) {
       return;
@@ -165,13 +170,15 @@ export default class Conversation extends RcModule {
   }
 
   _loadConversation(conversationId) {
-    const conversation = this._messageStore.findConversationById(conversationId);
+    const conversation = this._messageStore.findConversationById(
+      conversationId,
+    );
     if (!conversation) {
       return;
     }
-    const messages = this._messageStore.messages.filter(message => (
-      message.conversationId === conversationId
-    ));
+    const messages = this._messageStore.messages.filter(
+      message => message.conversationId === conversationId,
+    );
     const lastMessage = this._messageStore.allConversations[conversation.index];
     const senderNumber = this._getCurrentSenderNumber(lastMessage);
     let recipients = lastMessage && lastMessage.recipients;
@@ -211,7 +218,7 @@ export default class Conversation extends RcModule {
   _getReplyOnMessageId() {
     const lastMessage =
       this.messages &&
-      (this.messages.length > 0) &&
+      this.messages.length > 0 &&
       this.messages[this.messages.length - 1];
     if (lastMessage && lastMessage.id) {
       return lastMessage.id;
@@ -223,13 +230,38 @@ export default class Conversation extends RcModule {
     if (!this.senderNumber) {
       return null;
     }
-    return (this.senderNumber.extensionNumber || this.senderNumber.phoneNumber);
+    return this.senderNumber.extensionNumber || this.senderNumber.phoneNumber;
   }
 
   _getToNumbers() {
     return this.recipients.map(
-      recipient => (recipient.extensionNumber || recipient.phoneNumber)
+      recipient => recipient.extensionNumber || recipient.phoneNumber,
     );
+  }
+
+  _alertWarning(message) {
+    if (message) {
+      const ttlConfig =
+        message !== messageSenderMessages.noAreaCode ? { ttl: 0 } : null;
+      this._alert.warning({
+        message,
+        ...ttlConfig,
+      });
+      return true;
+    }
+    return false;
+  }
+
+  @proxify
+  async updateMessageText(text) {
+    if (text.length > 1000) {
+      return this._alertWarning(messageSenderMessages.textTooLong);
+    }
+    return this.store.dispatch({
+      type: this.actionTypes.updateMessages,
+      text,
+      id: this.id,
+    });
   }
 
   @proxify
@@ -238,17 +270,20 @@ export default class Conversation extends RcModule {
       type: this.actionTypes.reply,
     });
     try {
-      const responses = await this._messageSender
-        .send({
-          fromNumber: this._getFromNumber(),
-          toNumbers: this._getToNumbers(),
-          text,
-          replyOnMessageId: this._getReplyOnMessageId(),
-        });
+      const responses = await this._messageSender.send({
+        fromNumber: this._getFromNumber(),
+        toNumbers: this._getToNumbers(),
+        text,
+        replyOnMessageId: this._getReplyOnMessageId(),
+      });
       if (responses && responses[0]) {
         this._messageStore.pushMessage(responses[0]);
         this.store.dispatch({
           type: this.actionTypes.replySuccess,
+        });
+        this.store.dispatch({
+          type: this.actionTypes.removeMessage,
+          id: this.id,
         });
         return responses[0];
       }
@@ -301,4 +336,20 @@ export default class Conversation extends RcModule {
   get messageStoreUpdatedAt() {
     return this.state.messageStoreUpdatedAt;
   }
+
+  get messageTexts() {
+    return this.state.messageTexts;
+  }
+
+  @getter
+  messageText = createSelector(
+    () => this.messageTexts,
+    () => this.id,
+    (messageTexts, id) => {
+      const res = messageTexts.find(
+        msg => typeof msg === 'object' && msg.id === id,
+      );
+      return res ? res.text : '';
+    },
+  );
 }

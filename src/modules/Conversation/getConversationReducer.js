@@ -82,6 +82,21 @@ export function getMessageStoreUpdatedAtReducer(types) {
   };
 }
 
+export function getMessageTextsReducer(types) {
+  return (state = [], { type, text, id }) => {
+    switch (type) {
+      case types.updateMessages:
+        return [{ id, text }].concat(
+          state.filter(msg => typeof msg === 'object' && msg.id !== id),
+        );
+      case types.removeMessage:
+        return state.filter(msg => typeof msg === 'object' && msg.id !== id);
+      default:
+        return state;
+    }
+  };
+}
+
 export default function getConversationReducer(types) {
   return combineReducers({
     status: getModuleStatusReducer(types),
@@ -91,5 +106,6 @@ export default function getConversationReducer(types) {
     senderNumber: getSenderNumberReducer(types),
     recipients: getRecipientsReducer(types),
     messageStoreUpdatedAt: getMessageStoreUpdatedAtReducer(types),
+    messageTexts: getMessageTextsReducer(types),
   });
 }

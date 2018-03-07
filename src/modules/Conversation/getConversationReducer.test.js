@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import {expect} from 'chai';
 import {
   getConversationStatusReducer,
   getConversationIdReducer,
@@ -6,6 +6,7 @@ import {
   getSenderNumberReducer,
   getRecipientsReducer,
   getMessageStoreUpdatedAtReducer,
+  getMessageTextsReducer
 } from './getConversationReducer';
 
 import actionTypes from './actionTypes';
@@ -25,8 +26,8 @@ describe('Conversation :: getConversationStatusReducer', () => {
     });
     it('should return original state of actionTypes is not recognized', () => {
       const originalState = {};
-      expect(reducer(originalState, { type: 'foo' }))
-      .to.equal(originalState);
+      expect(reducer(originalState, {type: 'foo'}))
+        .to.equal(originalState);
     });
     it('should return pushing status on reply', () => {
       [
@@ -64,8 +65,8 @@ describe('Conversation :: getConversationIdReducer', () => {
     });
     it('should return original state of actionTypes is not recognized', () => {
       const originalState = {};
-      expect(reducer(originalState, { type: 'foo' }))
-      .to.equal(originalState);
+      expect(reducer(originalState, {type: 'foo'}))
+        .to.equal(originalState);
     });
     it('should return conversationId on load', () => {
       [
@@ -104,8 +105,8 @@ describe('Conversation :: getSenderNumberReducer', () => {
     });
     it('should return original state of actionTypes is not recognized', () => {
       const originalState = {};
-      expect(reducer(originalState, { type: 'foo' }))
-      .to.equal(originalState);
+      expect(reducer(originalState, {type: 'foo'}))
+        .to.equal(originalState);
     });
     it('should return sender number object on load', () => {
       [
@@ -146,8 +147,8 @@ describe('Conversation :: getRecipientsReducer', () => {
     });
     it('should return original state of actionTypes is not recognized', () => {
       const originalState = {};
-      expect(reducer(originalState, { type: 'foo' }))
-      .to.equal(originalState);
+      expect(reducer(originalState, {type: 'foo'}))
+        .to.equal(originalState);
     });
     it('should return toNumber array on updateRecipients and load', () => {
       [
@@ -189,8 +190,8 @@ describe('Conversation :: getMessagesReducer', () => {
     });
     it('should return original state of actionTypes is not recognized', () => {
       const originalState = {};
-      expect(reducer(originalState, { type: 'foo' }))
-      .to.equal(originalState);
+      expect(reducer(originalState, {type: 'foo'}))
+        .to.equal(originalState);
     });
     it('should return messages array on load', () => {
       [
@@ -231,8 +232,8 @@ describe('Conversation :: getMessageStoreUpdatedAtReducer', () => {
     });
     it('should return original state of actionTypes is not recognized', () => {
       const originalState = {};
-      expect(reducer(originalState, { type: 'foo' }))
-      .to.equal(originalState);
+      expect(reducer(originalState, {type: 'foo'}))
+        .to.equal(originalState);
     });
     it('should return conversationsTimestamp on load', () => {
       [
@@ -243,6 +244,48 @@ describe('Conversation :: getMessageStoreUpdatedAtReducer', () => {
           type,
           conversationsTimestamp
         })).to.equal(conversationsTimestamp);
+      });
+    });
+  });
+});
+
+
+describe('CompostText :: getMessageTextsReducer', () => {
+  it('getMessageTextsReducer should be a function', () => {
+    expect(getMessageTextsReducer).to.be.a('function');
+  });
+  it('getMessageTextsReducer should return a reducer', () => {
+    expect(getMessageTextsReducer()).to.be.a('function');
+  });
+  describe('messageTextsReducer', () => {
+    const reducer = getMessageTextsReducer(actionTypes);
+    it('should have initial state of empty array', () => {
+      expect(reducer(undefined, {}).length).to.equal(0);
+    });
+    it('should return original state of actionTypes is not recognized', () => {
+      const originalState = [{id: 1, text: ''}];
+      expect(reducer(originalState, {type: 'foo'}))
+        .to.equal(originalState);
+    });
+    it('should updates the messages array on updateMessageText', () => {
+      [
+        actionTypes.updateMessages,
+      ].forEach(type => {
+        expect(reducer([{id: 1, text: ''}], {
+          type,
+          text: '12345678',
+          id: 2
+        }).length).to.equal(2);
+      });
+    });
+    it('should return blank string on reply', () => {
+      [
+        actionTypes.removeMessage,
+      ].forEach(type => {
+        expect(reducer([], {
+          type,
+          id: 2
+        }).length).to.equal(0);
       });
     });
   });
