@@ -1,4 +1,6 @@
 import 'core-js/fn/array/find';
+import { createSelector } from 'reselect';
+
 import RcModule from '../../lib/RcModule';
 import { Module } from '../../lib/di';
 import getRegionSettingsReducer, {
@@ -10,6 +12,7 @@ import regionSettingsMessages from '../RegionSettings/regionSettingsMessages';
 import actionTypes from './actionTypes';
 import validateAreaCode from '../../lib/validateAreaCode';
 import proxify from '../../lib/proxy/proxify';
+import getter from '../../lib/getter';
 
 /**
  * @class
@@ -81,7 +84,7 @@ export default class RegionSettings extends RcModule {
         if (!this._tabManager || this._tabManager.active) {
           await this.checkRegionSettings();
         }
-        this._processedPlans = this._dialingPlan.plans;
+        this._processedPlans = this.availableCountries;
         this.store.dispatch({
           type: this.actionTypes.initSuccess,
         });
@@ -94,9 +97,9 @@ export default class RegionSettings extends RcModule {
         });
       } else if (
         this.ready &&
-        this._processedPlans !== this._dialingPlan.plans
+        this._processedPlans !== this.availableCountries
       ) {
-        this._processedPlans = this._dialingPlan.plans;
+        this._processedPlans = this.availableCountries;
         if (!this._tabManager || this._tabManager.active) {
           await this.checkRegionSettings();
         }
@@ -112,9 +115,17 @@ export default class RegionSettings extends RcModule {
     return this.state.status === moduleStatuses.ready;
   }
 
-  get availableCountries() {
-    return this._dialingPlan.plans;
-  }
+  @getter
+  availableCountries = createSelector(
+    () => this._dialingPlan.plans,
+    () => this._extensionInfo.country,
+    (plans, country) => {
+      if (plans && plans.length > 0) {
+        return plans;
+      }
+      return (country && [country]) || [];
+    },
+  )
 
   _alertSettingsChanged() {
     this._alert.warning({
@@ -128,7 +139,7 @@ export default class RegionSettings extends RcModule {
     let countryCode = this._storage.getItem(this._countryCodeKey);
     if (
       countryCode &&
-      !this._dialingPlan.plans.find(plan => (
+      !this.availableCountries.find(plan => (
         plan.isoCode === countryCode
       ))
     ) {
@@ -136,9 +147,9 @@ export default class RegionSettings extends RcModule {
       this._alertSettingsChanged();
     }
     if (!countryCode) {
-      const country = this._dialingPlan.plans.find(plan => (
+      const country = this.availableCountries.find(plan => (
         plan.isoCode === this._extensionInfo.country.isoCode
-      )) || this._dialingPlan.plans[0];
+      )) || this.availableCountries[0];
       countryCode = country && country.isoCode;
       this.store.dispatch({
         type: this.actionTypes.setData,
@@ -179,6 +190,19 @@ export default class RegionSettings extends RcModule {
     this.setData({
       areaCode,
     });
+  }
+
+  get showReginSetting() {
+    if (this.availableCountries.length > 1) {
+      return true;
+    }
+    if (this.availableCountries.length === 1 && (
+      this.availableCountries[0].isoCode === 'US' ||
+      this.availableCountries[0].isoCode === 'CA'
+    )) {
+      return true;
+    }
+    return false;
   }
 
   get countryCode() {

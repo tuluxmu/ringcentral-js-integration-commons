@@ -4084,6 +4084,13 @@ karma-html-reporter@^0.2.7:
     lodash "~2.2.0"
     mu2 "~0.5.19"
 
+karma-junit-reporter@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/karma-junit-reporter/-/karma-junit-reporter-1.2.0.tgz#4f9c40cedfb1a395f8aef876abf96189917c6396"
+  dependencies:
+    path-is-absolute "^1.0.0"
+    xmlbuilder "8.2.2"
+
 karma-mocha-reporter@^2.2.1:
   version "2.2.3"
   resolved "https://registry.yarnpkg.com/karma-mocha-reporter/-/karma-mocha-reporter-2.2.3.tgz#04fdda45a1d9697a73871c7472223c581701ab20"
@@ -7008,6 +7015,10 @@ xml-js@^1.0.2:
   resolved "https://registry.yarnpkg.com/xml-js/-/xml-js-1.5.2.tgz#234780d012b49a19093dbd464228d06303fddc23"
   dependencies:
     sax "^1.2.4"
+
+xmlbuilder@8.2.2:
+  version "8.2.2"
+  resolved "https://registry.yarnpkg.com/xmlbuilder/-/xmlbuilder-8.2.2.tgz#69248673410b4ba42e1a6136551d2922335aa773"
 
 xmlhttprequest-ssl@1.5.3:
   version "1.5.3"

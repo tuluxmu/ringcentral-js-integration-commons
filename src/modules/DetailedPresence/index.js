@@ -1,7 +1,5 @@
 import { Module } from '../../lib/di';
 import Presence from '../Presence';
-import moduleStatuses from '../../enums/moduleStatuses';
-import { getLastNotDisturbDndStatusReducer } from '../Presence/getPresenceReducer';
 import actionTypes from './actionTypes';
 import getDetailedPresenceReducer from './getDetailedPresenceReducer';
 import subscriptionFilters from '../../enums/subscriptionFilters';
@@ -9,6 +7,7 @@ import {
   isEnded,
   removeInboundRingOutLegs,
 } from '../../lib/callLogHelpers';
+import proxify from '../../lib/proxy/proxify';
 
 const presenceRegExp = /.*\/presence\?detailedTelephonyState=true&sipData=true/;
 
@@ -18,12 +17,7 @@ const presenceRegExp = /.*\/presence\?detailedTelephonyState=true&sipData=true/;
  */
 @Module({
   deps: [
-    'Auth',
-    'Client',
-    'Storage',
-    'Subscription',
-    'RolesAndPermissions',
-    'ConnectivityMonitor'
+    { dep: 'DetailedPresenceOptions', optional: true }
   ]
 })
 export default class DetailedPresence extends Presence {
@@ -35,38 +29,15 @@ export default class DetailedPresence extends Presence {
    * @param {Subscription} params.subscription - subscription module instance
    * @param {ConnectivityMonitor} params.connectivityMonitor - connectivityMonitor module instance
    */
-  constructor({
-    auth,
-    client,
-    subscription,
-    connectivityMonitor,
-    rolesAndPermissions,
-    storage,
-    ...options
-  }) {
+  constructor(options) {
     super({
-      ...options,
+      getReducer: getDetailedPresenceReducer,
+      subscriptionFilter: subscriptionFilters.detailedPresenceWithSip,
       actionTypes,
+      lastNotDisturbDndStatusStorageKey: 'lastNotDisturbDndStatusDetailPresence',
+      ...options
     });
-    this._auth = auth;
-    this._client = client;
-    this._storage = storage;
-    this._subscription = subscription;
-    this._connectivityMonitor = connectivityMonitor;
-    this._rolesAndPermissions = rolesAndPermissions;
-    this._lastNotDisturbDndStatusStorageKey = 'lastNotDisturbDndStatusDetailPresence';
-    if (this._storage) {
-      this._reducer = getDetailedPresenceReducer(this.actionTypes);
-      this._storage.registerReducer({
-        key: this._lastNotDisturbDndStatusStorageKey,
-        reducer: getLastNotDisturbDndStatusReducer(this.actionTypes)
-      });
-    } else {
-      this._reducer = getDetailedPresenceReducer(this.actionTypes, {
-        lastNotDisturbDndStatus: getLastNotDisturbDndStatusReducer(this.actionTypes),
-      });
-    }
-    this._lastMessage = null;
+
     this.addSelector('sessionIdList',
       () => this.state.calls,
       calls => calls.map(call => call.sessionId),
@@ -79,9 +50,6 @@ export default class DetailedPresence extends Presence {
           .filter(call => !isEnded(call))
       ),
     );
-    this._lastMessage = null;
-    this._lastTelephonyStatus = null;
-    this._lastSequence = 0;
   }
 
   _subscriptionHandler = (message) => {
@@ -112,75 +80,11 @@ export default class DetailedPresence extends Presence {
       });
     }
   }
-  _onStateChange = async () => {
-    if (
-      this._auth.loggedIn &&
-      this._subscription.ready &&
-      this._rolesAndPermissions.ready &&
-      (!this._connectivityMonitor || this._connectivityMonitor.ready) &&
-      this.status === moduleStatuses.pending
-    ) {
-      this.store.dispatch({
-        type: this.actionTypes.init,
-      });
-      if (this._connectivityMonitor) {
-        this._connectivity = this._connectivityMonitor.connectivity;
-      }
-      if (this._rolesAndPermissions.hasPresencePermission) {
-        await this.fetch();
-        this._subscription.subscribe(subscriptionFilters.detailedPresenceWithSip);
-      }
-      this.store.dispatch({
-        type: this.actionTypes.initSuccess,
-      });
-    } else if (
-      (
-        !this._auth.loggedIn ||
-        !this._subscription.ready ||
-        (this._connectivityMonitor && !this._connectivityMonitor.ready)
-      ) &&
-      this.ready
-    ) {
-      this.store.dispatch({
-        type: this.actionTypes.reset,
-      });
-      this._lastTelephonyStatus = null;
-      this._lastSequence = 0;
-      this._lastMessage = null;
-      this.store.dispatch({
-        type: this.actionTypes.resetSuccess,
-      });
-    } else if (
-      this.ready &&
-      this._subscription.ready &&
-      this._subscription.message &&
-      this._subscription.message !== this._lastMessage
-    ) {
-      this._lastMessage = this._subscription.message;
-      this._subscriptionHandler(this._lastMessage);
-    } else if (
-      this.ready &&
-      this._connectivityMonitor &&
-      this._connectivityMonitor.ready &&
-      this._connectivity !== this._connectivityMonitor.connectivity
-    ) {
-      this._connectivity = this._connectivityMonitor.connectivity;
-      // fetch data on regain connectivity
-      if (this._connectivity) {
-        if (this._rolesAndPermissions.hasPresencePermission) {
-          this._fetch();
-        }
-      }
-    }
-  }
-
-  initialize() {
-    this.store.subscribe(this._onStateChange);
-  }
 
   get data() {
     return this.state.data;
   }
+
   get calls() {
     return this._selectors.calls();
   }
@@ -192,6 +96,8 @@ export default class DetailedPresence extends Presence {
   get sessionIdList() {
     return this._selectors.sessionIdList();
   }
+
+  @proxify
   async _fetch() {
     this.store.dispatch({
       type: this.actionTypes.fetch,

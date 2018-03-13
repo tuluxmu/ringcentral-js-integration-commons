@@ -152,13 +152,6 @@ export default class Phone extends RcModule {
       storage: this.storage,
       getState: () => this.state.subscription,
     }));
-    this.addModule('presence', new Presence({
-      ...options,
-      auth: this.auth,
-      client: this.client,
-      subscription: this.subscription,
-      getState: () => this.state.presence,
-    }));
     // this.addModule('router', new RouterInteraction({
     //   ...options,
     //   history,
@@ -192,6 +185,14 @@ export default class Phone extends RcModule {
       rolesAndPermissions: this.rolesAndPermissions,
       alert: this.alert,
       getState: () => this.state.accountInfo,
+    }));
+    this.addModule('presence', new Presence({
+      ...options,
+      auth: this.auth,
+      client: this.client,
+      subscription: this.subscription,
+      rolesAndPermissions: this.rolesAndPermissions,
+      getState: () => this.state.presence,
     }));
     this.addModule('accountExtension', new AccountExtension({
       ...options,

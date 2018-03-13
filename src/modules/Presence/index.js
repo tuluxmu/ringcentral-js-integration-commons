@@ -4,11 +4,12 @@ import getPresenceReducer, {
   getLastNotDisturbDndStatusReducer
 } from './getPresenceReducer';
 import presenceActionTypes from './actionTypes';
-import loginStatus from '../Auth/loginStatus';
 import moduleStatuses from '../../enums/moduleStatuses';
+import subscriptionFilters from '../../enums/subscriptionFilters';
 import dndStatus from './dndStatus';
 import presenceStatus from './presenceStatus';
 import proxify from '../../lib/proxy/proxify';
+import ensureExist from '../../lib/ensureExist';
 
 const presenceEndPoint = /.*\/presence(\?.*)?/;
 
@@ -18,7 +19,9 @@ const presenceEndPoint = /.*\/presence(\?.*)?/;
  */
 @Module({
   deps: [
-    'Auth', 'Client', 'Storage', 'Subscription',
+    'Auth', 'Client', 'Subscription', 'RolesAndPermissions',
+    { dep: 'Storage', optional: true },
+    { dep: 'ConnectivityMonitor', optional: true },
     { dep: 'PresenceOptions', optional: true }
   ]
 })
@@ -37,23 +40,34 @@ export default class Presence extends RcModule {
     client,
     storage,
     subscription,
+    rolesAndPermissions,
+    connectivityMonitor,
     actionTypes = presenceActionTypes,
+    getReducer = getPresenceReducer,
+    subscriptionFilter = subscriptionFilters.presence,
+    lastNotDisturbDndStatusStorageKey = 'lastNotDisturbDndStatus',
     ...options
   }) {
     super({
       ...options,
       actionTypes,
     });
-    this._auth = auth;
-    this._client = client;
-    this._subscription = subscription;
+    this._auth = this::ensureExist(auth, 'auth');
+    this._client = this::ensureExist(client, 'client');
+    this._subscription = this::ensureExist(subscription, 'subscription');
+    this._rolesAndPermissions =
+      this::ensureExist(rolesAndPermissions, 'rolesAndPermissions');
     this._storage = storage;
+    this._connectivityMonitor = connectivityMonitor;
+
+    this._subscriptionFilter = subscriptionFilter;
+
     this._lastMessage = null;
 
     this._delayTimeoutId = null;
-    this._lastNotDisturbDndStatusStorageKey = 'lastNotDisturbDndStatus';
+    this._lastNotDisturbDndStatusStorageKey = lastNotDisturbDndStatusStorageKey;
     if (this._storage) {
-      this._reducer = getPresenceReducer(this.actionTypes);
+      this._reducer = getReducer(this.actionTypes);
       this._storage.registerReducer({
         key: this._lastNotDisturbDndStatusStorageKey,
         reducer: getLastNotDisturbDndStatusReducer(this.actionTypes)
@@ -64,6 +78,35 @@ export default class Presence extends RcModule {
       });
     }
     this._lastSequence = 0;
+  }
+
+  _onStateChange = async () => {
+    if (this._shouldInit()) {
+      await this._init();
+    } else if (this._shouldReset()) {
+      this._reset();
+    } else if (
+      this.ready &&
+      this._subscription.ready &&
+      this._subscription.message &&
+      this._subscription.message !== this._lastMessage
+    ) {
+      this._lastMessage = this._subscription.message;
+      this._subscriptionHandler(this._lastMessage);
+    } else if (
+      this.ready &&
+      this._connectivityMonitor &&
+      this._connectivityMonitor.ready &&
+      this._connectivity !== this._connectivityMonitor.connectivity
+    ) {
+      this._connectivity = this._connectivityMonitor.connectivity;
+      // fetch data on regain connectivity
+      if (this._connectivity) {
+        if (this._rolesAndPermissions.hasPresencePermission) {
+          this._fetch();
+        }
+      }
+    }
   }
 
   _subscriptionHandler = (message) => {
@@ -82,44 +125,60 @@ export default class Presence extends RcModule {
   }
 
   initialize() {
-    this.store.subscribe(async () => {
-      if (
-        this._auth.loginStatus === loginStatus.loggedIn &&
-        this._subscription.ready &&
-        this.status === moduleStatuses.pending
-      ) {
-        this.store.dispatch({
-          type: this.actionTypes.init,
-        });
-        await this.fetch();
-        this._subscription.subscribe('/account/~/extension/~/presence');
-        this.store.dispatch({
-          type: this.actionTypes.initSuccess,
-        });
-      } else if (
-        (this._auth.loginStatus !== loginStatus.loggedIn ||
-          !this._subscription.ready) &&
-        this.ready
-      ) {
-        this.store.dispatch({
-          type: this.actionTypes.reset,
-        });
-        this._lastSequence = 0;
-        this._lastMessage = null;
-        this.store.dispatch({
-          type: this.actionTypes.resetSuccess,
-        });
-      } else if (
-        this.ready &&
-        this._subscription.ready &&
-        this._subscription.message &&
-        this._subscription.message !== this._lastMessage
-      ) {
-        this._lastMessage = this._subscription.message;
-        this._subscriptionHandler(this._lastMessage);
-      }
+    this.store.subscribe(this._onStateChange);
+  }
+
+  _shouldInit() {
+    return (
+      this._auth.loggedIn &&
+      (!this._storage || this._storage.ready) &&
+      (!this._connectivityMonitor || this._connectivityMonitor.ready) &&
+      this._subscription.ready &&
+      this._rolesAndPermissions.ready &&
+      this.status === moduleStatuses.pending
+    );
+  }
+
+  _shouldReset() {
+    return (
+      (
+        !this._auth.loggedIn ||
+        (!!this._storage && !this._storage.ready) ||
+        !this._rolesAndPermissions.ready ||
+        (this._connectivityMonitor && !this._connectivityMonitor.ready) ||
+        !this._subscription.ready
+      ) &&
+      this.ready
+    );
+  }
+
+  async _init() {
+    this.store.dispatch({
+      type: this.actionTypes.init,
+    });
+    if (this._connectivityMonitor) {
+      this._connectivity = this._connectivityMonitor.connectivity;
+    }
+    if (this._rolesAndPermissions.hasPresencePermission) {
+      await this.fetch();
+      this._subscription.subscribe(this._subscriptionFilter);
+    }
+    this.store.dispatch({
+      type: this.actionTypes.initSuccess,
     });
   }
+
+  _reset() {
+    this.store.dispatch({
+      type: this.actionTypes.reset,
+    });
+    this._lastSequence = 0;
+    this._lastMessage = null;
+    this.store.dispatch({
+      type: this.actionTypes.resetSuccess,
+    });
+  }
+
   @proxify
   async _fetch() {
     this.store.dispatch({
@@ -145,6 +204,7 @@ export default class Presence extends RcModule {
       throw error;
     }
   }
+
   @proxify
   async fetch() {
     if (!this._promise) {
@@ -152,8 +212,12 @@ export default class Presence extends RcModule {
     }
     return this._promise;
   }
+
   @proxify
   async _update(params) {
+    if (!this._rolesAndPermissions.hasEditPresencePermission) {
+      return;
+    }
     try {
       const { ownerId } = this._auth;
       const platform = this._client.service.platform();

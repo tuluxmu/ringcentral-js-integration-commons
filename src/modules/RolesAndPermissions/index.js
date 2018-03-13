@@ -157,10 +157,16 @@ export default class RolesAndPermissions extends DataFetcher {
     return !!(
       this.ready &&
       this.callingEnabled &&
-      this.permissions && (
-        this.permissions.ReadPresenceStatus &&
-        this.permissions.EditPresenceStatus
-      )
+      this.permissions && this.permissions.ReadPresenceStatus
+    );
+  }
+
+  get hasEditPresencePermission() {
+    return !!(
+      this.ready &&
+      this.callingEnabled &&
+      this.permissions &&
+      this.permissions.EditPresenceStatus
     );
   }
 
