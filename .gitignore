@@ -44,3 +44,5 @@ src/integration-test/commons/config/apiConfig.js
 src/integration-test/commons/config/testAccount.js
 
 demo-extension-build
+
+junit

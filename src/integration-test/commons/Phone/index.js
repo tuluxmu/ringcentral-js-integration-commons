@@ -352,6 +352,8 @@ export default class Phone extends RcModule {
       storage: this.storage,
       ringout: this.ringout,
       numberValidate: this.numberValidate,
+      regionSettings: this.regionSettings,
+      rolesAndPermissions: this.rolesAndPermissions,
       getState: () => this.state.call,
     }));
     // this.addModule('autoLogger', new AutoLogger({

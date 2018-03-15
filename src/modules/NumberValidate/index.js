@@ -217,7 +217,12 @@ export default class NumberValidate extends RcModule {
       normalizeNumber({ phoneNumber, countryCode, areaCode })
     ));
     const response = await this._numberParserApi(normalizedNumbers, homeCountry);
-    return response.phoneNumbers;
+    return response.phoneNumbers.map(phoneNumber => ({
+      ...phoneNumber,
+      international:
+        !!phoneNumber.country &&
+        phoneNumber.country.isoCode !== response.homeCountry.isoCode,
+    }));
   }
 
   @proxify

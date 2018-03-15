@@ -4,6 +4,8 @@ import { Module } from '../../lib/di';
 import callingModes from '../CallingSettings/callingModes';
 import moduleStatuses from '../../enums/moduleStatuses';
 import proxify from '../../lib/proxy/proxify';
+import ensureExist from '../../lib/ensureExist';
+
 import callActionTypes from './actionTypes';
 import getCallReducer, {
   getLastPhoneNumberReducer,
@@ -27,6 +29,7 @@ import ringoutErrors from '../Ringout/ringoutErrors';
     'NumberValidate',
     'RegionSettings',
     'CallingSettings',
+    'RolesAndPermissions',
     { dep: 'Webphone', optional: true },
     { dep: 'CallOptions', optional: true }
   ]
@@ -54,6 +57,7 @@ export default class Call extends RcModule {
     webphone,
     numberValidate,
     regionSettings,
+    rolesAndPermissions,
     ...options
   }) {
     super({
@@ -61,16 +65,18 @@ export default class Call extends RcModule {
       actionTypes: callActionTypes,
     });
 
-    this._alert = alert;
-    this._storage = storage;
+    this._alert = this::ensureExist(alert, 'alert');
+    this._storage = this::ensureExist(storage, 'storage');
     this._storageKey = 'callData';
     this._reducer = getCallReducer(this.actionTypes);
-    this._callingSettings = callingSettings;
-    this._ringout = ringout;
-    this._softphone = softphone;
+    this._callingSettings = this::ensureExist(callingSettings, 'callingSettings');
+    this._ringout = this::ensureExist(ringout, 'ringout');
+    this._softphone = this::ensureExist(softphone, 'softphone');
     this._webphone = webphone;
-    this._numberValidate = numberValidate;
-    this._regionSettings = regionSettings;
+    this._numberValidate = this::ensureExist(numberValidate, 'numberValidate');
+    this._regionSettings = this::ensureExist(regionSettings, 'regionSettings');
+    this._rolesAndPermissions = this::ensureExist(rolesAndPermissions, 'rolesAndPermissions');
+
     this._callSettingMode = null;
 
     this._storage.registerReducer({
@@ -111,6 +117,7 @@ export default class Call extends RcModule {
       (!this._webphone || this._webphone.ready) &&
       this._ringout.ready &&
       this._softphone.ready &&
+      this._rolesAndPermissions.ready &&
       this.pending
     );
   }
@@ -123,6 +130,7 @@ export default class Call extends RcModule {
         (!!this._webphone && !this._webphone.ready) ||
         !this._ringout.ready ||
         !this._softphone.ready ||
+        !this._rolesAndPermissions.ready ||
         !this._storage.ready
       ) &&
       this.ready
@@ -209,7 +217,8 @@ export default class Call extends RcModule {
             });
           }
         } catch (error) {
-          if (!error.message) { // validate format error
+          if (!error.message && error.type && callErrors[error.type]) {
+            // validate format error
             this._alert.warning({
               message: callErrors[error.type],
               payload: {
@@ -272,6 +281,17 @@ export default class Call extends RcModule {
       return null;
     }
     const parsedNumbers = validatedResult.numbers;
+    const parsedToNumber = parsedNumbers[0];
+    if (
+      parsedToNumber.international &&
+      !this._rolesAndPermissions.permissions.InternationalCalls
+    ) {
+      const error = {
+        phoneNumber: parsedToNumber.originalString,
+        type: 'noInternational',
+      };
+      throw error;
+    }
     // using e164 in response to call
     let parsedFromNumber =
       parsedNumbers[1] ? parsedNumbers[1].e164 : '';
@@ -285,7 +305,7 @@ export default class Call extends RcModule {
       parsedFromNumber = 'anonymous';
     }
     return {
-      toNumber: parsedNumbers[0].e164,
+      toNumber: parsedToNumber.e164,
       fromNumber: parsedFromNumber,
     };
   }
