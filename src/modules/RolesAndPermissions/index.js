@@ -224,4 +224,13 @@ export default class RolesAndPermissions extends DataFetcher {
   get hasUserGuidePermission() {
     return !!(this.callingEnabled || this.hasReadMessagesPermission);
   }
+
+  get hasConferencingPermission() {
+    return !!(
+      this.serviceFeatures && (
+        this.serviceFeatures.Conferencing &&
+        this.serviceFeatures.Conferencing.enabled
+      )
+    );
+  }
 }

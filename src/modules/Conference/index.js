@@ -113,7 +113,8 @@ export default class Conference extends DataFetcher {
   }
 
   get dialInNumber() {
-    return this._storage.getItem(this._dialInNumberStorageKey) || this.data.phoneNumber;
+    return this._storage.getItem(this._dialInNumberStorageKey) ||
+      (this.data && this.data.phoneNumber);
   }
 
   get _hasPermission() {
