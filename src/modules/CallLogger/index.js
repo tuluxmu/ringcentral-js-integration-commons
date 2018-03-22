@@ -52,6 +52,7 @@ export default class CallLogger extends LoggerBase {
     callMonitor,
     contactMatcher,
     tabManager,
+    initialState,
     ...options
   }) {
     super({
@@ -70,7 +71,7 @@ export default class CallLogger extends LoggerBase {
     this._storageKey = `${this._name}Data`;
     this._storage.registerReducer({
       key: this._storageKey,
-      reducer: getDataReducer(this.actionTypes),
+      reducer: getDataReducer(this.actionTypes, initialState),
     });
 
     this._lastProcessedCalls = null;

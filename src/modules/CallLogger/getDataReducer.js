@@ -7,17 +7,17 @@ export function getLogOnRingingReducer(types) {
   };
 }
 
-export function getAutoLogReducer(types) {
-  return (state = true, { type, autoLog }) => {
+export function getAutoLogReducer(types, initialState = true) {
+  return (state = initialState, { type, autoLog }) => {
     if (type === types.setAutoLog) return !!autoLog;
     return state;
   };
 }
 
 /* istanbul ignore next */
-export default function getDataReducer(types) {
+export default function getDataReducer(types, initialState = {}) {
   return combineReducers({
-    autoLog: getAutoLogReducer(types),
+    autoLog: getAutoLogReducer(types, initialState.autoLog),
     logOnRinging: getLogOnRingingReducer(types),
   });
 }
