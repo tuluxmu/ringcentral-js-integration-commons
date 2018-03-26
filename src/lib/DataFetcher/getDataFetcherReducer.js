@@ -28,9 +28,18 @@ export function getDefaultDataReducer(types) {
 }
 
 export function getDefaultTimestampReducer(types) {
-  return (state = null, { type, timestamp }) => {
-    if (type === types.fetchSuccess) return timestamp;
-    return state;
+  return (state = null, { type, timestamp, cleanOnReset }) => {
+    switch (type) {
+      case types.fetchSuccess:
+        return timestamp;
+      case types.resetSuccess:
+        if (cleanOnReset) {
+          return null;
+        }
+        return state;
+      default:
+        return state;
+    }
   };
 }
 
