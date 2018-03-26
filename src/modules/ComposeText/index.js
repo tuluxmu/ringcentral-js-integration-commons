@@ -70,6 +70,7 @@ export default class ComposeText extends RcModule {
     if (
       this._shouldInit()
     ) {
+      this.senderNumbersList = this._messageSender.senderNumbersList;
       this.store.dispatch({
         type: this.actionTypes.initSuccess,
       });
@@ -85,6 +86,13 @@ export default class ComposeText extends RcModule {
       this._shouldReset()
     ) {
       this._resetModuleStatus();
+    }
+    if (
+      this.ready &&
+      this._messageSender.senderNumbersList.length !== this.senderNumbersList.length
+    ) {
+      this.senderNumbersList = this._messageSender.senderNumbersList;
+      this._initSenderNumber();
     }
   }
 
